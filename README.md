@@ -1,97 +1,87 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# GymPilot Frontend
 
-# Getting Started
+Native React Native + TypeScript client for GymPilot Vision. The project is Android-first because camera tracking and scheduled notifications use native modules.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Included foundation
 
-## Step 1: Start Metro
+- React Navigation native stack and main bottom tabs
+- Axios clients for the Spring Boot API and Python vision service
+- React Hook Form + Zod validation
+- Zustand authentication/session state
+- Keychain/Keystore token storage via `react-native-keychain`
+- AsyncStorage for future non-sensitive preferences
+- Vision Camera for the Sprint 3 workout-camera flow
+- SVG, Gifted Charts and Linear Gradient for future progress views
+- Notifee for local workout, hydration, bedtime and sleep reminders
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Firebase Messaging and Image Picker are deliberately not installed because the plan marks server push and progress photos as optional/stretch work.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Prerequisites
 
-```sh
-# Using npm
+- Node.js 22.11 or newer (the generated React Native 0.88 template requirement)
+- JDK 17 for the Android React Native toolchain
+- Android Studio, Android SDK and an emulator or USB-debuggable phone
+- Spring Boot API on port `8080`
+- GymPilot vision service on port `8000`
+
+## Install and run
+
+```powershell
+npm install
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+In a second terminal:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+```powershell
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+The Android emulator uses `10.0.2.2` to reach services on the development computer. For a physical phone, change `DEVELOPMENT_HOST` in `src/config/environment.ts` to the computer's LAN address and ensure the phone is on the same network.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## Expected Week 1 API contract
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+The starter UI expects:
 
-```sh
-bundle install
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/profile/me`
+- `PUT /api/profile`
+
+Register/login should return an access token, optional refresh token and user session:
+
+```json
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "user": {
+    "id": "...",
+    "email": "member@example.com",
+    "onboardingComplete": false
+  }
+}
 ```
 
-Then, and every time you update your native dependencies, run:
+The endpoint paths and DTO fields are typed starter contracts; align them with the Spring Boot implementation when the auth/profile stories are built.
 
-```sh
-bundle exec pod install
+## Checks
+
+```powershell
+npm run lint
+npx tsc --noEmit
+npm test -- --runInBand
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Project layout
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+```text
+src/
+  components/    shared UI primitives
+  config/        API/vision base URLs
+  navigation/    auth stack and main tabs
+  screens/       auth, onboarding and main feature shells
+  services/      Axios clients and secure token vault
+  store/         Zustand stores
+  theme/         design tokens
+  types/         shared TypeScript contracts
 ```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
