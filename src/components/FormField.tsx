@@ -1,37 +1,39 @@
 import type {TextInputProps} from 'react-native';
 import {StyleSheet, Text, TextInput, View} from 'react-native';
 
-import {colors} from '../theme/colors';
+import {useTheme} from '../theme/ThemeProvider';
+import {fonts} from '../theme/typography';
 
 type FormFieldProps = TextInputProps & {label: string; error?: string};
 
 export function FormField({label, error, ...inputProps}: FormFieldProps) {
+  const {colors} = useTheme();
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, {color: colors.text}]}>{label}</Text>
       <TextInput
         autoCapitalize="none"
         placeholderTextColor={colors.muted}
-        style={[styles.input, error ? styles.inputError : null]}
+        selectionColor={colors.primary}
+        style={[styles.input, {backgroundColor: colors.surface, borderColor: colors.border, color: colors.text}, error ? {borderColor: colors.danger} : null]}
         {...inputProps}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, {color: colors.danger}]}>{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {gap: 6},
-  label: {color: colors.text, fontSize: 14, fontWeight: '600'},
+  label: {fontFamily: fonts.body, fontSize: 14, fontWeight: '700'},
   input: {
-    borderColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
-    color: colors.text,
+    fontFamily: fonts.body,
     fontSize: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  inputError: {borderColor: colors.danger},
-  error: {color: colors.danger, fontSize: 12},
+  inputError: {},
+  error: {fontFamily: fonts.body, fontSize: 12},
 });

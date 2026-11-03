@@ -1,24 +1,28 @@
 import {ActivityIndicator, Pressable, StyleSheet, Text} from 'react-native';
 
-import {colors} from '../theme/colors';
+import {useTheme} from '../theme/ThemeProvider';
+import {fonts} from '../theme/typography';
 
-type PrimaryButtonProps = {label: string; loading?: boolean; onPress: () => void};
+type PrimaryButtonProps = {label: string; loading?: boolean; disabled?: boolean; variant?: 'primary' | 'secondary' | 'danger'; onPress: () => void};
 
-export function PrimaryButton({label, loading, onPress}: PrimaryButtonProps) {
+export function PrimaryButton({label, loading, disabled, variant = 'primary', onPress}: PrimaryButtonProps) {
+  const {colors} = useTheme();
+  const background = variant === 'primary' ? colors.primary : variant === 'danger' ? colors.danger : colors.primarySoft;
+  const foreground = variant === 'primary' || variant === 'danger' ? colors.textOnPrimary : colors.primary;
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={loading}
+      disabled={loading || disabled}
       onPress={onPress}
       style={({pressed}) => [
-        styles.button,
+        styles.button, {backgroundColor: background},
         pressed ? styles.buttonPressed : null,
-        loading ? styles.buttonDisabled : null,
+        loading || disabled ? styles.buttonDisabled : null,
       ]}>
       {loading ? (
-        <ActivityIndicator color={colors.surface} />
+        <ActivityIndicator color={foreground} />
       ) : (
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, {color: foreground}]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -27,13 +31,12 @@ export function PrimaryButton({label, loading, onPress}: PrimaryButtonProps) {
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: colors.primary,
     borderRadius: 12,
     minHeight: 50,
     justifyContent: 'center',
     paddingHorizontal: 18,
   },
-  buttonPressed: {backgroundColor: colors.primaryPressed},
+  buttonPressed: {opacity: 0.86},
   buttonDisabled: {opacity: 0.7},
-  label: {color: colors.surface, fontSize: 16, fontWeight: '700'},
+  label: {fontFamily: fonts.body, fontSize: 16, fontWeight: '800'},
 });

@@ -1,7 +1,16 @@
-export type AuthStackParamList = {Login: undefined; Register: undefined};
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: {token?: string} | undefined;
+};
 export type MainTabParamList = {
   Home: undefined;
   Plan: undefined;
-  Progress: undefined;
+  Exercises: undefined;
   Profile: undefined;
+};
+export type MainStackParamList = {
+  Tabs: undefined;
+  WorkoutDetail: {day?: import('../types/profile').DayOfWeek} | undefined;
 };

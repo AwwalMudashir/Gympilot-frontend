@@ -1,0 +1,45 @@
+appId: com.gympilotfrontend
+name: Register, verify, onboard and generate a plan
+---
+- runScript: generate-user.js
+- launchApp:
+    clearState: true
+- assertVisible: Welcome back
+- tapOn: New to GymPilot? Create an account
+- tapOn:
+    id: register-firstName
+- inputText: Maestro
+- tapOn:
+    id: register-lastName
+- inputText: Runner
+- tapOn:
+    id: register-email
+- inputText: ${output.email}
+- tapOn:
+    id: register-password
+- inputText: GymPilot!2026Secure
+- tapOn:
+    id: register-confirmPassword
+- inputText: GymPilot!2026Secure
+- hideKeyboard
+- tapOn: Create account
+- extendedWaitUntil:
+    visible: Verify your email
+    timeout: 15000
+- assertVisible:
+    id: verification-token
+- tapOn: Verify email
+- extendedWaitUntil:
+    visible: Your starting point
+    timeout: 15000
+- tapOn: Continue
+- assertVisible: Your training goal
+- tapOn: Continue
+- assertVisible: Build your week
+- tapOn: Continue
+- assertVisible: Recovery basics
+- tapOn: Create my plan
+- extendedWaitUntil:
+    visible: "Today.*s focus"
+    timeout: 20000
+- assertVisible: At a glance

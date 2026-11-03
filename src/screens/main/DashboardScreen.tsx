@@ -1,27 +1,39 @@
-import {StyleSheet, Text, View} from 'react-native';
-
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useEffect, useState} from 'react';
+import {Image, Pressable, StyleSheet, Text, View} from 'react-native';
+import {AppIcon} from '../../components/AppIcon';
+import {Card} from '../../components/Card';
+import {PrimaryButton} from '../../components/PrimaryButton';
 import {Screen} from '../../components/Screen';
-import {colors} from '../../theme/colors';
+import {StateView} from '../../components/StateView';
+import type {MainStackParamList} from '../../navigation/types';
+import {apiErrorMessage} from '../../services/http';
+import {profileApi} from '../../services/profileApi';
+import {workoutApi} from '../../services/workoutApi';
+import {useAuthStore} from '../../store/authStore';
+import {useTheme} from '../../theme/ThemeProvider';
+import {fonts} from '../../theme/typography';
+import type {Profile} from '../../types/profile';
+import type {TodayWorkout, WorkoutPlan} from '../../types/workout';
 
 export function DashboardScreen() {
-  return (
-    <Screen>
-      <Text style={styles.eyebrow}>TODAY</Text>
-      <Text style={styles.title}>Your daily brief</Text>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Foundation ready</Text>
-        <Text style={styles.body}>
-          Connect the workout-plan endpoint in Sprint 2. Camera tracking belongs to the dedicated vision flow in Sprint 3.
-        </Text>
-      </View>
-    </Screen>
-  );
+  const {colors} = useTheme(); const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>(); const user = useAuthStore(s => s.user);
+  const [today, setToday] = useState<TodayWorkout>(); const [plan, setPlan] = useState<WorkoutPlan>(); const [profile, setProfile] = useState<Profile>(); const [loading, setLoading] = useState(true); const [error, setError] = useState<string>();
+  async function load() { setLoading(true); setError(undefined); try { const profileValue = await profileApi.get(); setProfile(profileValue); try { const [todayValue, planValue] = await Promise.all([workoutApi.today(), workoutApi.currentPlan()]); setToday(todayValue); setPlan(planValue); } catch { setToday(undefined); setPlan(undefined); } } catch (caught) { setError(apiErrorMessage(caught)); } finally { setLoading(false); } }
+  async function generate() { setLoading(true); try { await workoutApi.generatePlan(); await load(); } catch (caught) { setError(apiErrorMessage(caught)); setLoading(false); } }
+  useEffect(() => { load(); }, []);
+  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
+  return <Screen scroll><View style={styles.header}><View><Text style={[styles.greeting, {color: colors.muted}]}>{greeting},</Text><Text style={[styles.name, {color: colors.text}]}>{user?.firstName}</Text></View>{user?.profilePictureUrl ? <Image source={{uri: user.profilePictureUrl}} style={styles.avatar} /> : <View style={[styles.avatar, {backgroundColor: colors.primarySoft}]}><Text style={[styles.avatarText, {color: colors.primary}]}>{user?.firstName?.[0]}{user?.lastName?.[0]}</Text></View>}</View>
+    {loading ? <StateView title="Preparing your day" message="Syncing your plan and training profile." /> : error ? <StateView title="Dashboard unavailable" message={error} icon="retry" actionLabel="Try again" onAction={load} /> : <>
+      <Text style={[styles.section, {color: colors.text}]}>Today’s focus</Text>
+      {!plan ? <Card><StateView title="Build your first week" message="Your profile is ready. Generate a balanced plan in one tap." actionLabel="Generate my plan" onAction={generate} /></Card> : today?.restDay ? <Card style={{backgroundColor: colors.primarySoft}}><View style={styles.heroTop}><View style={[styles.heroIcon, {backgroundColor: colors.surface}]}><AppIcon name="moon" color={colors.primary} size={23} /></View><Text style={[styles.heroTag, {color: colors.primary}]}>RECOVERY DAY</Text></View><Text style={[styles.heroTitle, {color: colors.text}]}>Reset. Refuel. Come back stronger.</Text><Text style={[styles.heroBody, {color: colors.muted}]}>Light movement and quality sleep will support your next session.</Text></Card> : <Pressable onPress={() => navigation.navigate('WorkoutDetail', {day: today?.workout?.day})}><Card style={{backgroundColor: colors.primary}}><View style={styles.heroTop}><View style={[styles.heroIcon, {backgroundColor: colors.textOnPrimary}]}><AppIcon name="bolt" color={colors.primary} size={21} /></View><Text style={[styles.heroTag, {color: colors.textOnPrimary}]}>READY WHEN YOU ARE</Text></View><Text style={[styles.heroTitle, {color: colors.textOnPrimary}]}>{today?.workout?.title}</Text><Text style={[styles.heroBody, {color: colors.textOnPrimary}]}>{today?.workout?.exercises.length} exercises · about {today?.workout?.estimatedMinutes} minutes</Text><View style={styles.heroAction}><Text style={[styles.start, {color: colors.textOnPrimary}]}>View workout</Text><AppIcon name="chevron" color={colors.textOnPrimary} /></View></Card></Pressable>}
+      <Text style={[styles.section, {color: colors.text}]}>At a glance</Text><View style={styles.grid}><Metric icon="dumbbell" label="Training" value={plan ? `${plan.workoutDays} days` : 'Not set'} /><Metric icon="clock" label="Session" value={profile ? `${profile.workoutDurationMinutes} min` : '—'} /><Metric icon="water" label="Water goal" value={profile?.dailyWaterTargetMl ? `${(profile.dailyWaterTargetMl / 1000).toFixed(1)} L` : '—'} /><Metric icon="moon" label="Sleep goal" value={profile?.sleepTargetMinutes ? `${profile.sleepTargetMinutes / 60} hrs` : '—'} /></View>
+      {plan ? <Card><View style={styles.weekRow}><View><Text style={[styles.weekLabel, {color: colors.muted}]}>WEEKLY PROGRAM</Text><Text style={[styles.weekTitle, {color: colors.text}]}>{plan.totalExercises} planned movements</Text></View><View style={[styles.weekCount, {backgroundColor: colors.primarySoft}]}><Text style={[styles.weekCountText, {color: colors.primary}]}>{plan.workoutDays}</Text></View></View><Text style={[styles.explanation, {color: colors.muted}]}>{plan.explanation}</Text></Card> : null}
+      <PrimaryButton label="Refresh dashboard" variant="secondary" onPress={load} />
+    </>}
+  </Screen>;
 }
 
-const styles = StyleSheet.create({
-  eyebrow: {color: colors.primary, fontSize: 13, fontWeight: '800'},
-  title: {color: colors.text, fontSize: 30, fontWeight: '800'},
-  card: {backgroundColor: colors.surface, borderRadius: 18, padding: 20},
-  cardTitle: {color: colors.text, fontSize: 18, fontWeight: '700'},
-  body: {color: colors.muted, fontSize: 15, lineHeight: 22, marginTop: 8},
-});
+function Metric({icon, label, value}: {icon: 'dumbbell' | 'clock' | 'water' | 'moon'; label: string; value: string}) { const {colors} = useTheme(); return <Card style={styles.metric}><View style={[styles.metricIcon, {backgroundColor: colors.primarySoft}]}><AppIcon name={icon} color={colors.primary} size={17} /></View><Text style={[styles.metricValue, {color: colors.text}]}>{value}</Text><Text style={[styles.metricLabel, {color: colors.muted}]}>{label}</Text></Card>; }
+const styles = StyleSheet.create({header: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'}, greeting: {fontFamily: fonts.body, fontSize: 14}, name: {fontFamily: fonts.display, fontSize: 38}, avatar: {alignItems: 'center', borderRadius: 21, height: 48, justifyContent: 'center', width: 48}, avatarText: {fontFamily: fonts.display, fontSize: 20}, section: {fontFamily: fonts.displaySemibold, fontSize: 25, marginTop: 4}, heroTop: {alignItems: 'center', flexDirection: 'row', gap: 9}, heroIcon: {alignItems: 'center', borderRadius: 15, height: 38, justifyContent: 'center', width: 38}, heroTag: {fontFamily: fonts.body, fontSize: 10, fontWeight: '900', letterSpacing: 1.3}, heroTitle: {fontFamily: fonts.display, fontSize: 32, lineHeight: 34, marginTop: 18}, heroBody: {fontFamily: fonts.body, fontSize: 14, lineHeight: 20, marginTop: 5, opacity: 0.86}, heroAction: {alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 20}, start: {fontFamily: fonts.body, fontSize: 14, fontWeight: '900'}, grid: {flexDirection: 'row', flexWrap: 'wrap', gap: 10}, metric: {minHeight: 132, width: '48%'}, metricIcon: {alignItems: 'center', borderRadius: 13, height: 34, justifyContent: 'center', width: 34}, metricValue: {fontFamily: fonts.display, fontSize: 27, marginTop: 12}, metricLabel: {fontFamily: fonts.body, fontSize: 12}, weekRow: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'}, weekLabel: {fontFamily: fonts.body, fontSize: 10, fontWeight: '900', letterSpacing: 1.2}, weekTitle: {fontFamily: fonts.displaySemibold, fontSize: 21, marginTop: 3}, weekCount: {alignItems: 'center', borderRadius: 18, height: 44, justifyContent: 'center', width: 44}, weekCountText: {fontFamily: fonts.display, fontSize: 24}, explanation: {fontFamily: fonts.body, fontSize: 13, lineHeight: 19, marginTop: 12}});
