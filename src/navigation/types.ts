@@ -8,6 +8,7 @@ export type MainTabParamList = {
   Home: undefined;
   Plan: undefined;
   Exercises: undefined;
+  History: undefined;
   Profile: undefined;
 };
 export type MainStackParamList = {

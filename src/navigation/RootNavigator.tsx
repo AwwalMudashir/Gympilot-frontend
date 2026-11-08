@@ -12,6 +12,7 @@ import {VerifyEmailScreen} from '../screens/auth/VerifyEmailScreen';
 import {DashboardScreen} from '../screens/main/DashboardScreen';
 import {ExerciseCatalogueScreen} from '../screens/main/ExerciseCatalogueScreen';
 import {ProfileScreen} from '../screens/main/ProfileScreen';
+import {WorkoutHistoryScreen} from '../screens/main/WorkoutHistoryScreen';
 import {WeeklyPlanScreen} from '../screens/main/WeeklyPlanScreen';
 import {WorkoutDetailScreen} from '../screens/main/WorkoutDetailScreen';
 import {OnboardingScreen} from '../screens/onboarding/OnboardingScreen';
@@ -28,6 +29,7 @@ type TabIconProps = {color: string; size: number};
 const HomeTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="home" size={size - 2} />;
 const PlanTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="dumbbell" size={size - 2} />;
 const ExercisesTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="chart" size={size - 2} />;
+const HistoryTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="history" size={size - 2} />;
 const ProfileTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="user" size={size - 2} />;
 
 function AuthNavigator() {
@@ -56,6 +58,7 @@ function MainNavigator() {
       <MainTabs.Screen component={DashboardScreen} name="Home" options={{tabBarIcon: HomeTabIcon}} />
       <MainTabs.Screen component={WeeklyPlanScreen} name="Plan" options={{tabBarIcon: PlanTabIcon}} />
       <MainTabs.Screen component={ExerciseCatalogueScreen} name="Exercises" options={{tabBarIcon: ExercisesTabIcon}} />
+      <MainTabs.Screen component={WorkoutHistoryScreen} name="History" options={{tabBarIcon: HistoryTabIcon}} />
       <MainTabs.Screen component={ProfileScreen} name="Profile" options={{tabBarIcon: ProfileTabIcon}} />
     </MainTabs.Navigator>
   );

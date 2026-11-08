@@ -1,0 +1,76 @@
+import {useFocusEffect} from '@react-navigation/native';
+import {useCallback, useState} from 'react';
+import {StyleSheet, Text, View} from 'react-native';
+
+import {AppIcon} from '../../components/AppIcon';
+import {Card} from '../../components/Card';
+import {Screen} from '../../components/Screen';
+import {StateView} from '../../components/StateView';
+import {apiErrorMessage} from '../../services/http';
+import {workoutApi} from '../../services/workoutApi';
+import {useTheme} from '../../theme/ThemeProvider';
+import {fonts} from '../../theme/typography';
+import type {WorkoutSession} from '../../types/workout';
+
+export function WorkoutHistoryScreen() {
+  const {colors} = useTheme();
+  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(undefined);
+    try { setSessions(await workoutApi.history()); }
+    catch (caught) { setError(apiErrorMessage(caught)); }
+    finally { setLoading(false); }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  return (
+    <Screen scroll>
+      <Text style={[styles.eyebrow, {color: colors.primary}]}>PROGRESS</Text>
+      <Text style={[styles.title, {color: colors.text}]}>Workout history</Text>
+      {loading && sessions.length === 0 ? (
+        <StateView title="Loading history" message="Collecting your recent sessions." />
+      ) : error ? (
+        <StateView title="Could not load history" message={error} actionLabel="Try again" onAction={load} />
+      ) : sessions.length === 0 ? (
+        <StateView title="No sessions yet" message="Complete or skip a planned workout and it will appear here." icon="history" />
+      ) : sessions.map(session => {
+        const statusColor = session.status === 'COMPLETED' ? colors.primary
+          : session.status === 'SKIPPED' ? colors.warning : colors.muted;
+        return (
+          <Card key={session.id}>
+            <View style={styles.row}>
+              <View style={[styles.icon, {backgroundColor: colors.primarySoft}]}>
+                <AppIcon name={session.status === 'COMPLETED' ? 'check' : 'clock'} color={statusColor} />
+              </View>
+              <View style={styles.flex}>
+                <Text style={[styles.cardTitle, {color: colors.text}]}>{session.title}</Text>
+                <Text style={[styles.meta, {color: colors.muted}]}>{session.workoutDay} · {session.scheduledDate}</Text>
+              </View>
+              <Text style={[styles.status, {color: statusColor}]}>{session.status.replace('_', ' ')}</Text>
+            </View>
+            {session.status === 'COMPLETED' ? (
+              <Text style={[styles.summary, {color: colors.muted}]}>{session.results.length} exercises recorded{session.difficultyRating ? ` · ${session.difficultyRating.replace('_', ' ').toLowerCase()}` : ''}</Text>
+            ) : null}
+          </Card>
+        );
+      })}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  eyebrow: {fontFamily: fonts.body, fontSize: 11, fontWeight: '900', letterSpacing: 1.5},
+  title: {fontFamily: fonts.display, fontSize: 42},
+  row: {alignItems: 'center', flexDirection: 'row', gap: 12},
+  icon: {alignItems: 'center', borderRadius: 14, height: 44, justifyContent: 'center', width: 44},
+  flex: {flex: 1},
+  cardTitle: {fontFamily: fonts.displaySemibold, fontSize: 21},
+  meta: {fontFamily: fonts.body, fontSize: 12, marginTop: 2},
+  status: {fontFamily: fonts.body, fontSize: 10, fontWeight: '900'},
+  summary: {fontFamily: fonts.body, fontSize: 12, marginTop: 12},
+});

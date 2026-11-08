@@ -4,3 +4,19 @@ export type WorkoutPlanItem = {id: string; exercise: Exercise; sets: number; tar
 export type WorkoutDay = {day: DayOfWeek; title: string; estimatedMinutes: number; exercises: WorkoutPlanItem[]};
 export type WorkoutPlan = {id: string; weekStartDate: string; status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED'; explanation: string; workoutDays: number; totalExercises: number; days: WorkoutDay[]};
 export type TodayWorkout = {planId: string; date: string; restDay: boolean; workout?: WorkoutDay};
+export type WorkoutSessionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED' | 'CANCELLED';
+export type DifficultyRating = 'TOO_EASY' | 'EASY' | 'MODERATE' | 'HARD' | 'TOO_HARD';
+export type ExerciseResult = {exerciseId: string; exerciseName: string; plannedSets: number; completedSets: number; plannedRepetitions: number; completedRepetitions: number};
+export type WorkoutSession = {
+  id: string;
+  workoutPlanId: string;
+  workoutDay: DayOfWeek;
+  title: string;
+  scheduledDate: string;
+  startedAt?: string;
+  completedAt?: string;
+  status: WorkoutSessionStatus;
+  difficultyRating?: DifficultyRating;
+  notes?: string;
+  results: ExerciseResult[];
+};

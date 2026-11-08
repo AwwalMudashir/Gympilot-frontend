@@ -6,6 +6,7 @@ import {faChartLine} from '@fortawesome/free-solid-svg-icons/faChartLine';
 import {faCheck} from '@fortawesome/free-solid-svg-icons/faCheck';
 import {faChevronRight} from '@fortawesome/free-solid-svg-icons/faChevronRight';
 import {faClock} from '@fortawesome/free-solid-svg-icons/faClock';
+import {faClockRotateLeft} from '@fortawesome/free-solid-svg-icons/faClockRotateLeft';
 import {faDumbbell} from '@fortawesome/free-solid-svg-icons/faDumbbell';
 import {faHouse} from '@fortawesome/free-solid-svg-icons/faHouse';
 import {faMoon} from '@fortawesome/free-solid-svg-icons/faMoon';
@@ -20,7 +21,7 @@ import {faXmark} from '@fortawesome/free-solid-svg-icons/faXmark';
 import type {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 
 const icons = {arrowLeft: faArrowLeft, bolt: faBolt, camera: faCamera, chart: faChartLine,
-  check: faCheck, chevron: faChevronRight, clock: faClock, dumbbell: faDumbbell,
+  check: faCheck, chevron: faChevronRight, clock: faClock, history: faClockRotateLeft, dumbbell: faDumbbell,
   home: faHouse, moon: faMoon, pen: faPen, retry: faRotateRight, shield: faShieldHalved,
   sun: faSun, trash: faTrash, user: faUser, water: faWater, close: faXmark} satisfies Record<string, IconDefinition>;
 

@@ -1,5 +1,5 @@
-import {useState} from 'react';
-import {StyleSheet, Text} from 'react-native';
+import {useEffect, useState} from 'react';
+import {Linking, StyleSheet, Text} from 'react-native';
 import {FormField} from '../../components/FormField';
 import {PrimaryButton} from '../../components/PrimaryButton';
 import {Screen} from '../../components/Screen';
@@ -18,6 +18,16 @@ export function VerifyEmailScreen() {
   const [token, setToken] = useState(initial ?? '');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>();
+  useEffect(() => {
+    function acceptVerificationLink(url: string | null | undefined) {
+      if (!url?.includes('/verify-email')) return;
+      const match = url.match(/[?&]token=([^&]+)/);
+      if (match?.[1]) setToken(decodeURIComponent(match[1]));
+    }
+    Linking.getInitialURL().then(acceptVerificationLink).catch(() => undefined);
+    const subscription = Linking.addEventListener('url', event => acceptVerificationLink(event.url));
+    return () => subscription.remove();
+  }, []);
   async function verify() { setLoading(true); try { await authApi.verifyEmail(token.trim()); mark(); } catch (caught) { setMessage(apiErrorMessage(caught)); } finally { setLoading(false); } }
   async function resend() { setLoading(true); try { const result = await authApi.resendVerification(user!.email); if (result.developmentToken) setToken(result.developmentToken); setMessage('A fresh verification token has been sent.'); } catch (caught) { setMessage(apiErrorMessage(caught)); } finally { setLoading(false); } }
   return <Screen>

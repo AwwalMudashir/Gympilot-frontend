@@ -18,7 +18,9 @@ function ThemedApp() {
   const base = isDark ? DarkTheme : DefaultTheme;
   return <>
     <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-    <NavigationContainer theme={{...base, colors: {...base.colors, background: colors.background, card: colors.surface, text: colors.text, border: colors.border, primary: colors.primary}}}>
+    <NavigationContainer
+      linking={{prefixes: ['gympilot://auth'], config: {screens: {ResetPassword: 'reset-password'}}}}
+      theme={{...base, colors: {...base.colors, background: colors.background, card: colors.surface, text: colors.text, border: colors.border, primary: colors.primary}}}>
       <RootNavigator />
     </NavigationContainer>
   </>;
