@@ -4,10 +4,15 @@ import {faBolt} from '@fortawesome/free-solid-svg-icons/faBolt';
 import {faCamera} from '@fortawesome/free-solid-svg-icons/faCamera';
 import {faChartLine} from '@fortawesome/free-solid-svg-icons/faChartLine';
 import {faCheck} from '@fortawesome/free-solid-svg-icons/faCheck';
+import {faCircleCheck} from '@fortawesome/free-solid-svg-icons/faCircleCheck';
+import {faCircleExclamation} from '@fortawesome/free-solid-svg-icons/faCircleExclamation';
+import {faCircleInfo} from '@fortawesome/free-solid-svg-icons/faCircleInfo';
 import {faChevronRight} from '@fortawesome/free-solid-svg-icons/faChevronRight';
 import {faClock} from '@fortawesome/free-solid-svg-icons/faClock';
 import {faClockRotateLeft} from '@fortawesome/free-solid-svg-icons/faClockRotateLeft';
 import {faDumbbell} from '@fortawesome/free-solid-svg-icons/faDumbbell';
+import {faEye} from '@fortawesome/free-solid-svg-icons/faEye';
+import {faEyeSlash} from '@fortawesome/free-solid-svg-icons/faEyeSlash';
 import {faHouse} from '@fortawesome/free-solid-svg-icons/faHouse';
 import {faMoon} from '@fortawesome/free-solid-svg-icons/faMoon';
 import {faPen} from '@fortawesome/free-solid-svg-icons/faPen';
@@ -21,7 +26,9 @@ import {faXmark} from '@fortawesome/free-solid-svg-icons/faXmark';
 import type {IconDefinition} from '@fortawesome/fontawesome-svg-core';
 
 const icons = {arrowLeft: faArrowLeft, bolt: faBolt, camera: faCamera, chart: faChartLine,
-  check: faCheck, chevron: faChevronRight, clock: faClock, history: faClockRotateLeft, dumbbell: faDumbbell,
+  check: faCheck, circleCheck: faCircleCheck, error: faCircleExclamation, info: faCircleInfo,
+  chevron: faChevronRight, clock: faClock, history: faClockRotateLeft, dumbbell: faDumbbell,
+  eye: faEye, eyeSlash: faEyeSlash,
   home: faHouse, moon: faMoon, pen: faPen, retry: faRotateRight, shield: faShieldHalved,
   sun: faSun, trash: faTrash, user: faUser, water: faWater, close: faXmark} satisfies Record<string, IconDefinition>;
 

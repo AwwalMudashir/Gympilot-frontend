@@ -54,3 +54,8 @@ export function apiErrorMessage(error: unknown, fallback = 'Something went wrong
   }
   return error.response?.data?.errors?.[0]?.message || error.response?.data?.message || fallback;
 }
+
+export function apiErrorCode(error: unknown) {
+  if (!axios.isAxiosError<ApiEnvelope<unknown>>(error)) return undefined;
+  return error.response?.data?.errors?.[0]?.code;
+}

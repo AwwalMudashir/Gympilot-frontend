@@ -4,6 +4,7 @@ import {StyleSheet, Text} from 'react-native';
 import {FormField} from '../../components/FormField';
 import {PrimaryButton} from '../../components/PrimaryButton';
 import {Screen} from '../../components/Screen';
+import {StatusNotice} from '../../components/StatusNotice';
 import type {AuthStackParamList} from '../../navigation/types';
 import {authApi} from '../../services/authApi';
 import {apiErrorMessage} from '../../services/http';
@@ -16,10 +17,14 @@ export function ForgotPasswordScreen({navigation}: Props) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [emailError, setEmailError] = useState<string>();
   async function submit() {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) return setEmailError('Enter your email address.');
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return setEmailError('Enter a valid email address.');
     setLoading(true); setError(undefined);
     try {
-      const result = await authApi.forgotPassword(email.trim());
+      const result = await authApi.forgotPassword(normalizedEmail);
       navigation.navigate('ResetPassword', result.developmentToken ? {token: result.developmentToken} : undefined);
     } catch (caught) { setError(apiErrorMessage(caught)); } finally { setLoading(false); }
   }
@@ -27,8 +32,8 @@ export function ForgotPasswordScreen({navigation}: Props) {
     <Text style={[styles.eyebrow, {color: colors.primary}]}>ACCOUNT RECOVERY</Text>
     <Text style={[styles.title, {color: colors.text}]}>Reset your password</Text>
     <Text style={[styles.body, {color: colors.muted}]}>Enter your email and we’ll send a secure reset token if the account exists.</Text>
-    <FormField label="Email" keyboardType="email-address" value={email} onChangeText={setEmail} />
-    {error ? <Text style={{color: colors.danger}}>{error}</Text> : null}
+    <FormField error={emailError} label="Email" keyboardType="email-address" placeholder="Enter your email" value={email} onChangeText={value => { setEmail(value); setEmailError(undefined); }} />
+    <StatusNotice message={error} tone="error" />
     <PrimaryButton label="Send reset instructions" loading={loading} onPress={submit} />
   </Screen>;
 }

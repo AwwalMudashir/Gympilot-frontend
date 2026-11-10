@@ -3,18 +3,16 @@ import {create} from 'zustand';
 import {authApi} from '../services/authApi';
 import {setSessionExpiredHandler} from '../services/http';
 import {tokenVault} from '../services/tokenVault';
-import type {AuthResponse, RegisterPayload, UserSession} from '../types/auth';
+import type {AuthResponse, RegisterPayload, RegistrationResponse, UserSession} from '../types/auth';
 
 type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
 type AuthState = {
   status: AuthStatus;
   user: UserSession | null;
-  verificationToken?: string;
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<RegistrationResponse>;
   refreshUser: () => Promise<void>;
-  markEmailVerified: () => void;
   completeOnboarding: () => void;
   updateProfilePicture: (url?: string) => void;
   logout: () => Promise<void>;
@@ -49,16 +47,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({status: 'signedIn', user: response.user});
   },
   async register(payload) {
-    const response = await authApi.register(payload);
-    await persistSession(response);
-    set({status: 'signedIn', user: response.user, verificationToken: response.developmentVerificationToken});
+    return authApi.register(payload);
   },
   async refreshUser() {
     set({user: await authApi.currentUser()});
-  },
-  markEmailVerified() {
-    const user = get().user;
-    if (user) set({user: {...user, emailVerified: true}, verificationToken: undefined});
   },
   completeOnboarding() {
     const user = get().user;
@@ -76,11 +68,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (refreshToken) await authApi.logout(refreshToken);
     } finally {
       await tokenVault.clear();
-      set({status: 'signedOut', user: null, verificationToken: undefined});
+      set({status: 'signedOut', user: null});
     }
   },
 }));
 
 setSessionExpiredHandler(() => {
-  useAuthStore.setState({status: 'signedOut', user: null, verificationToken: undefined});
+  useAuthStore.setState({status: 'signedOut', user: null});
 });

@@ -14,6 +14,12 @@ export type AuthResponse = AuthTokens & {
   tokenType: string;
   expiresInSeconds: number;
   user: UserSession;
+};
+
+export type RegistrationResponse = {
+  userId: string;
+  email: string;
+  verificationRequired: boolean;
   developmentVerificationToken?: string;
 };
 
