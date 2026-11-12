@@ -1,6 +1,6 @@
 import * as Keychain from 'react-native-keychain';
 
-import type {AuthTokens} from '../types/auth';
+import type { AuthTokens } from '../types/auth';
 
 const TOKEN_SERVICE = 'com.gympilot.auth';
 let accessToken: string | null = null;
@@ -11,7 +11,9 @@ export const tokenVault = {
   getRefreshToken: () => refreshToken,
 
   async read(): Promise<AuthTokens | null> {
-    const credentials = await Keychain.getGenericPassword({service: TOKEN_SERVICE});
+    const credentials = await Keychain.getGenericPassword({
+      service: TOKEN_SERVICE,
+    });
     if (!credentials) {
       return null;
     }
@@ -32,6 +34,6 @@ export const tokenVault = {
   async clear(): Promise<void> {
     accessToken = null;
     refreshToken = null;
-    await Keychain.resetGenericPassword({service: TOKEN_SERVICE});
+    await Keychain.resetGenericPassword({ service: TOKEN_SERVICE });
   },
 };

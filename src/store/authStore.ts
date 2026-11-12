@@ -1,9 +1,14 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
 
-import {authApi} from '../services/authApi';
-import {setSessionExpiredHandler} from '../services/http';
-import {tokenVault} from '../services/tokenVault';
-import type {AuthResponse, RegisterPayload, RegistrationResponse, UserSession} from '../types/auth';
+import { authApi } from '../services/authApi';
+import { setSessionExpiredHandler } from '../services/http';
+import { tokenVault } from '../services/tokenVault';
+import type {
+  AuthResponse,
+  RegisterPayload,
+  RegistrationResponse,
+  UserSession,
+} from '../types/auth';
 
 type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
 type AuthState = {
@@ -32,35 +37,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const tokens = await tokenVault.read();
       if (!tokens) {
-        set({status: 'signedOut', user: null});
+        set({ status: 'signedOut', user: null });
         return;
       }
-      set({status: 'signedIn', user: await authApi.currentUser()});
+      set({ status: 'signedIn', user: await authApi.currentUser() });
     } catch {
       await tokenVault.clear();
-      set({status: 'signedOut', user: null});
+      set({ status: 'signedOut', user: null });
     }
   },
   async login(email, password) {
     const response = await authApi.login(email, password);
     await persistSession(response);
-    set({status: 'signedIn', user: response.user});
+    set({ status: 'signedIn', user: response.user });
   },
   async register(payload) {
     return authApi.register(payload);
   },
   async refreshUser() {
-    set({user: await authApi.currentUser()});
+    set({ user: await authApi.currentUser() });
   },
   completeOnboarding() {
     const user = get().user;
     if (user) {
-      set({user: {...user, onboardingComplete: true}});
+      set({ user: { ...user, onboardingComplete: true } });
     }
   },
   updateProfilePicture(url) {
     const user = get().user;
-    if (user) set({user: {...user, profilePictureUrl: url}});
+    if (user) set({ user: { ...user, profilePictureUrl: url } });
   },
   async logout() {
     const refreshToken = tokenVault.getRefreshToken();
@@ -68,11 +73,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (refreshToken) await authApi.logout(refreshToken);
     } finally {
       await tokenVault.clear();
-      set({status: 'signedOut', user: null});
+      set({ status: 'signedOut', user: null });
     }
   },
 }));
 
 setSessionExpiredHandler(() => {
-  useAuthStore.setState({status: 'signedOut', user: null});
+  useAuthStore.setState({ status: 'signedOut', user: null });
 });

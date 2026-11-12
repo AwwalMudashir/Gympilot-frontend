@@ -1,40 +1,60 @@
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {useEffect, useState} from 'react';
-import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import {AppIcon} from '../components/AppIcon';
-import {ForgotPasswordScreen} from '../screens/auth/ForgotPasswordScreen';
-import {LoginScreen} from '../screens/auth/LoginScreen';
-import {RegisterScreen} from '../screens/auth/RegisterScreen';
-import {ResetPasswordScreen} from '../screens/auth/ResetPasswordScreen';
-import {VerifyEmailScreen} from '../screens/auth/VerifyEmailScreen';
-import {DashboardScreen} from '../screens/main/DashboardScreen';
-import {ExerciseCatalogueScreen} from '../screens/main/ExerciseCatalogueScreen';
-import {ProfileScreen} from '../screens/main/ProfileScreen';
-import {WorkoutHistoryScreen} from '../screens/main/WorkoutHistoryScreen';
-import {WeeklyPlanScreen} from '../screens/main/WeeklyPlanScreen';
-import {WorkoutDetailScreen} from '../screens/main/WorkoutDetailScreen';
-import {OnboardingScreen} from '../screens/onboarding/OnboardingScreen';
-import {useAuthStore} from '../store/authStore';
-import {useTheme} from '../theme/ThemeProvider';
-import {fonts} from '../theme/typography';
-import type {AuthStackParamList, MainStackParamList, MainTabParamList} from './types';
+import { AppIcon } from '../components/AppIcon';
+import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
+import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
+import { LoginScreen } from '../screens/auth/LoginScreen';
+import { RegisterScreen } from '../screens/auth/RegisterScreen';
+import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
+import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen';
+import { DashboardScreen } from '../screens/main/DashboardScreen';
+import { ExerciseCatalogueScreen } from '../screens/main/ExerciseCatalogueScreen';
+import { ExerciseDetailScreen } from '../screens/main/ExerciseDetailScreen';
+import { ProfileScreen } from '../screens/main/ProfileScreen';
+import { WorkoutHistoryScreen } from '../screens/main/WorkoutHistoryScreen';
+import { WeeklyPlanScreen } from '../screens/main/WeeklyPlanScreen';
+import { WorkoutDetailScreen } from '../screens/main/WorkoutDetailScreen';
+import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
+import { useAuthStore } from '../store/authStore';
+import { useTheme } from '../theme/ThemeProvider';
+import { fonts } from '../theme/typography';
+import type {
+  AuthStackParamList,
+  MainStackParamList,
+  MainTabParamList,
+} from './types';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const MainTabs = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
-type TabIconProps = {color: string; size: number};
-const HomeTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="home" size={size - 2} />;
-const PlanTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="dumbbell" size={size - 2} />;
-const ExercisesTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="chart" size={size - 2} />;
-const HistoryTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="history" size={size - 2} />;
-const ProfileTabIcon = ({color, size}: TabIconProps) => <AppIcon color={color} name="user" size={size - 2} />;
+type TabIconProps = { color: string; size: number };
+const HomeTabIcon = ({ color, size }: TabIconProps) => (
+  <AppIcon color={color} name="home" size={size - 2} />
+);
+const PlanTabIcon = ({ color, size }: TabIconProps) => (
+  <AppIcon color={color} name="dumbbell" size={size - 2} />
+);
+const ExercisesTabIcon = ({ color, size }: TabIconProps) => (
+  <AppIcon color={color} name="chart" size={size - 2} />
+);
+const HistoryTabIcon = ({ color, size }: TabIconProps) => (
+  <AppIcon color={color} name="history" size={size - 2} />
+);
+const ProfileTabIcon = ({ color, size }: TabIconProps) => (
+  <AppIcon color={color} name="user" size={size - 2} />
+);
 
 function SplashBrand() {
   return (
-    <View accessibilityLabel="GymPilot" accessibilityRole="image" style={styles.splashBrand}>
+    <View
+      accessibilityLabel="GymPilot"
+      accessibilityRole="image"
+      style={styles.splashBrand}
+    >
       <View style={styles.splashMark}>
         <Text style={styles.splashMonogram}>GP</Text>
         <View style={styles.dumbbell}>
@@ -56,43 +76,106 @@ function SplashBrand() {
 
 function AuthNavigator() {
   return (
-    <AuthStack.Navigator screenOptions={{headerShown: false}}>
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen component={LoginScreen} name="Login" />
       <AuthStack.Screen component={RegisterScreen} name="Register" />
       <AuthStack.Screen component={VerifyEmailScreen} name="VerifyEmail" />
-      <AuthStack.Screen component={ForgotPasswordScreen} name="ForgotPassword" />
+      <AuthStack.Screen
+        component={ForgotPasswordScreen}
+        name="ForgotPassword"
+      />
       <AuthStack.Screen component={ResetPasswordScreen} name="ResetPassword" />
     </AuthStack.Navigator>
   );
 }
 
 function MainNavigator() {
-  const {colors} = useTheme();
+  const { colors } = useTheme();
   return (
     <MainTabs.Navigator
       screenOptions={{
         headerShown: false,
-        headerStyle: {backgroundColor: colors.background},
+        headerStyle: { backgroundColor: colors.background },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: {backgroundColor: colors.surface, borderTopColor: colors.border, height: 68, paddingBottom: 8, paddingTop: 7},
-        tabBarLabelStyle: {fontFamily: fonts.body, fontSize: 11, fontWeight: '700'},
-      }}>
-      <MainTabs.Screen component={DashboardScreen} name="Home" options={{tabBarIcon: HomeTabIcon}} />
-      <MainTabs.Screen component={WeeklyPlanScreen} name="Plan" options={{tabBarIcon: PlanTabIcon}} />
-      <MainTabs.Screen component={ExerciseCatalogueScreen} name="Exercises" options={{tabBarIcon: ExercisesTabIcon}} />
-      <MainTabs.Screen component={WorkoutHistoryScreen} name="History" options={{tabBarIcon: HistoryTabIcon}} />
-      <MainTabs.Screen component={ProfileScreen} name="Profile" options={{tabBarIcon: ProfileTabIcon}} />
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 68,
+          paddingBottom: 8,
+          paddingTop: 7,
+        },
+        tabBarLabelStyle: {
+          fontFamily: fonts.body,
+          fontSize: 11,
+          fontWeight: '700',
+        },
+      }}
+    >
+      <MainTabs.Screen
+        component={DashboardScreen}
+        name="Home"
+        options={{ tabBarIcon: HomeTabIcon }}
+      />
+      <MainTabs.Screen
+        component={WeeklyPlanScreen}
+        name="Plan"
+        options={{ tabBarIcon: PlanTabIcon }}
+      />
+      <MainTabs.Screen
+        component={ExerciseCatalogueScreen}
+        name="Exercises"
+        options={{ tabBarIcon: ExercisesTabIcon }}
+      />
+      <MainTabs.Screen
+        component={WorkoutHistoryScreen}
+        name="History"
+        options={{ tabBarIcon: HistoryTabIcon }}
+      />
+      <MainTabs.Screen
+        component={ProfileScreen}
+        name="Profile"
+        options={{ tabBarIcon: ProfileTabIcon }}
+      />
     </MainTabs.Navigator>
   );
 }
 
 function SignedInNavigator() {
-  const {colors} = useTheme();
-  return <MainStack.Navigator screenOptions={{headerStyle: {backgroundColor: colors.background}, headerTintColor: colors.text, headerShadowVisible: false, headerTitleStyle: {fontFamily: fonts.displaySemibold}}}>
-    <MainStack.Screen component={MainNavigator} name="Tabs" options={{headerShown: false}} />
-    <MainStack.Screen component={WorkoutDetailScreen} name="WorkoutDetail" options={{title: 'Workout details'}} />
-  </MainStack.Navigator>;
+  const { colors } = useTheme();
+  const user = useAuthStore(state => state.user);
+  return (
+    <MainStack.Navigator
+      initialRouteName={user?.role === 'ADMIN' ? 'AdminDashboard' : 'Tabs'}
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
+        headerShadowVisible: false,
+        headerTitleStyle: { fontFamily: fonts.displaySemibold },
+      }}
+    >
+      <MainStack.Screen
+        component={MainNavigator}
+        name="Tabs"
+        options={{ headerShown: false }}
+      />
+      <MainStack.Screen
+        component={AdminDashboardScreen}
+        name="AdminDashboard"
+        options={{ title: 'Administration' }}
+      />
+      <MainStack.Screen
+        component={WorkoutDetailScreen}
+        name="WorkoutDetail"
+        options={{ title: 'Workout details' }}
+      />
+      <MainStack.Screen
+        component={ExerciseDetailScreen}
+        name="ExerciseDetail"
+        options={{ title: 'Exercise guide' }}
+      />
+    </MainStack.Navigator>
+  );
 }
 
 export function RootNavigator() {
@@ -102,7 +185,7 @@ export function RootNavigator() {
   const [splashReady, setSplashReady] = useState(false);
 
   useEffect(() => {
-    const splashTimer = setTimeout(() => setSplashReady(true), 900);
+    const splashTimer = setTimeout(() => setSplashReady(true), 400);
     initialize().catch(() => undefined);
     return () => clearTimeout(splashTimer);
   }, [initialize]);
@@ -114,14 +197,18 @@ export function RootNavigator() {
         <View style={styles.bottomAccent} />
         <SplashBrand />
         <Text style={styles.splashTagline}>TRAIN SMARTER. MOVE BETTER.</Text>
-        <ActivityIndicator color="#3FA36C" size="small" style={styles.splashLoader} />
+        <ActivityIndicator
+          color="#3FA36C"
+          size="small"
+          style={styles.splashLoader}
+        />
       </View>
     );
   }
   if (status === 'signedOut') {
     return <AuthNavigator />;
   }
-  if (!user?.onboardingComplete) {
+  if (!user?.onboardingComplete && user?.role !== 'ADMIN') {
     return <OnboardingScreen />;
   }
   return <SignedInNavigator />;
@@ -165,7 +252,7 @@ const styles = StyleSheet.create({
     height: 78,
     justifyContent: 'center',
     shadowColor: '#152019',
-    shadowOffset: {height: 8, width: 0},
+    shadowOffset: { height: 8, width: 0 },
     shadowOpacity: 0.16,
     shadowRadius: 14,
     width: 78,
@@ -230,5 +317,5 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: 8,
   },
-  splashLoader: {marginTop: 29, transform: [{scale: 0.82}]},
+  splashLoader: { marginTop: 29, transform: [{ scale: 0.82 }] },
 });

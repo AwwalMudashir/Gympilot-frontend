@@ -1,9 +1,13 @@
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
-  VerifyEmail: {email?: string; token?: string; developmentVerificationToken?: string};
+  VerifyEmail: {
+    email?: string;
+    token?: string;
+    developmentVerificationToken?: string;
+  };
   ForgotPassword: undefined;
-  ResetPassword: {token?: string} | undefined;
+  ResetPassword: { token?: string } | undefined;
 };
 export type MainTabParamList = {
   Home: undefined;
@@ -14,5 +18,7 @@ export type MainTabParamList = {
 };
 export type MainStackParamList = {
   Tabs: undefined;
-  WorkoutDetail: {day?: import('../types/profile').DayOfWeek} | undefined;
+  AdminDashboard: undefined;
+  WorkoutDetail: { day?: import('../types/profile').DayOfWeek } | undefined;
+  ExerciseDetail: { exercise: import('../types/workout').Exercise };
 };

@@ -4,11 +4,12 @@ export type UserSession = {
   firstName: string;
   lastName: string;
   profilePictureUrl?: string;
+  role: 'USER' | 'ADMIN';
   emailVerified: boolean;
   onboardingComplete: boolean;
 };
 
-export type AuthTokens = {accessToken: string; refreshToken: string};
+export type AuthTokens = { accessToken: string; refreshToken: string };
 
 export type AuthResponse = AuthTokens & {
   tokenType: string;
@@ -24,5 +25,9 @@ export type RegistrationResponse = {
 };
 
 export type RegisterPayload = {
-  firstName: string; lastName: string; email: string; password: string; confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 };

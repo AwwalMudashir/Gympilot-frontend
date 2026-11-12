@@ -1,8 +1,8 @@
-import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
-import {faDumbbell} from '@fortawesome/free-solid-svg-icons';
-import {useEffect, useState, type PropsWithChildren} from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faDumbbell } from '@fortawesome/free-solid-svg-icons';
+import { useEffect, useState, type PropsWithChildren } from 'react';
 import {
-  ImageBackground,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -13,10 +13,10 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {useTheme} from '../theme/ThemeProvider';
-import {fonts} from '../theme/typography';
+import { useTheme } from '../theme/ThemeProvider';
+import { fonts } from '../theme/typography';
 
 const gymBackground = require('../../assets/images/auth-gym-background.png');
 
@@ -28,20 +28,45 @@ type AuthScreenProps = PropsWithChildren<{
   softOverlay?: boolean;
 }>;
 
-export function AuthScreen({children, eyebrow, title, subtitle, compact = false, softOverlay = false}: AuthScreenProps) {
-  const {colors, isDark} = useTheme();
+export function AuthScreen({
+  children,
+  eyebrow,
+  title,
+  subtitle,
+  compact = false,
+  softOverlay = false,
+}: AuthScreenProps) {
+  const { colors, isDark } = useTheme();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const cardBackground = isDark ? 'rgba(13, 23, 17, 0.96)' : 'rgba(250, 255, 252, 0.95)';
-  const cardBorder = isDark ? 'rgba(119, 211, 155, 0.22)' : 'rgba(255, 255, 255, 0.72)';
+  const cardBackground = isDark
+    ? 'rgba(13, 23, 17, 0.96)'
+    : 'rgba(250, 255, 252, 0.95)';
+  const cardBorder = isDark
+    ? 'rgba(119, 211, 155, 0.22)'
+    : 'rgba(255, 255, 255, 0.72)';
   const overlayColors = softOverlay
-    ? ['rgba(3, 17, 10, 0.78)', 'rgba(28, 125, 70, 0.46)', 'rgba(3, 16, 9, 0.84)']
-    : ['rgba(3, 17, 10, 0.90)', 'rgba(28, 125, 70, 0.68)', 'rgba(3, 16, 9, 0.94)'];
+    ? [
+        'rgba(3, 17, 10, 0.78)',
+        'rgba(28, 125, 70, 0.46)',
+        'rgba(3, 16, 9, 0.84)',
+      ]
+    : [
+        'rgba(3, 17, 10, 0.90)',
+        'rgba(28, 125, 70, 0.68)',
+        'rgba(3, 16, 9, 0.94)',
+      ];
 
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSubscription = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
-    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () =>
+      setKeyboardVisible(true),
+    );
+    const hideSubscription = Keyboard.addListener(hideEvent, () =>
+      setKeyboardVisible(false),
+    );
 
     return () => {
       showSubscription.remove();
@@ -52,17 +77,26 @@ export function AuthScreen({children, eyebrow, title, subtitle, compact = false,
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" />
-      <ImageBackground source={gymBackground} resizeMode="cover" style={styles.background}>
+      <View style={styles.background}>
+        <Image
+          source={gymBackground}
+          resizeMode="cover"
+          style={styles.backgroundImage}
+        />
         <LinearGradient
           colors={overlayColors}
           locations={[0, 0.48, 1]}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.softGlow} />
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+        <SafeAreaView
+          edges={['top', 'bottom', 'left', 'right']}
+          style={styles.safeArea}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardAvoidingView}>
+            style={styles.keyboardAvoidingView}
+          >
             <ScrollView
               automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
               contentContainerStyle={[
@@ -70,22 +104,36 @@ export function AuthScreen({children, eyebrow, title, subtitle, compact = false,
                 compact ? styles.compactContent : null,
                 keyboardVisible ? styles.keyboardContent : null,
               ]}
-              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+              keyboardDismissMode={
+                Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+              }
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
-              showsVerticalScrollIndicator={false}>
+              showsVerticalScrollIndicator={false}
+            >
               {!keyboardVisible ? (
                 <>
                   <View style={styles.brandRow}>
                     <View style={styles.brandIcon}>
-                      <FontAwesomeIcon color="#F5FFF8" icon={faDumbbell} size={15} />
+                      <FontAwesomeIcon
+                        color="#F5FFF8"
+                        icon={faDumbbell}
+                        size={15}
+                      />
                     </View>
                     <Text style={styles.brandName}>GYMPILOT</Text>
                   </View>
 
                   <View style={styles.heroCopy}>
                     <Text style={styles.eyebrow}>{eyebrow}</Text>
-                    <Text style={[styles.title, compact ? styles.compactTitle : null]}>{title}</Text>
+                    <Text
+                      style={[
+                        styles.title,
+                        compact ? styles.compactTitle : null,
+                      ]}
+                    >
+                      {title}
+                    </Text>
                     <Text style={styles.subtitle}>{subtitle}</Text>
                   </View>
                 </>
@@ -99,22 +147,34 @@ export function AuthScreen({children, eyebrow, title, subtitle, compact = false,
                     borderColor: cardBorder,
                     shadowColor: colors.shadow,
                   },
-                ]}>
+                ]}
+              >
                 {children}
               </View>
 
-              {!keyboardVisible ? <Text style={styles.footer}>TRAIN SMARTER / MOVE BETTER</Text> : null}
+              {!keyboardVisible ? (
+                <Text style={styles.footer}>TRAIN SMARTER / MOVE BETTER</Text>
+              ) : null}
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
-      </ImageBackground>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: '#06130B'},
-  background: {flex: 1},
+  root: { flex: 1, backgroundColor: '#06130B' },
+  background: { flex: 1 },
+  backgroundImage: {
+    bottom: 0,
+    height: '100%',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: '100%',
+  },
   softGlow: {
     position: 'absolute',
     right: -90,
@@ -124,8 +184,8 @@ const styles = StyleSheet.create({
     borderRadius: 110,
     backgroundColor: 'rgba(151, 246, 180, 0.10)',
   },
-  safeArea: {flex: 1},
-  keyboardAvoidingView: {flex: 1},
+  safeArea: { flex: 1 },
+  keyboardAvoidingView: { flex: 1 },
   content: {
     flexGrow: 1,
     justifyContent: 'flex-end',
@@ -133,9 +193,20 @@ const styles = StyleSheet.create({
     paddingTop: 26,
     paddingBottom: 18,
   },
-  compactContent: {paddingTop: 18},
-  keyboardContent: {justifyContent: 'flex-start', paddingTop: 12, paddingBottom: 28},
-  brandRow: {position: 'absolute', top: 26, left: 22, flexDirection: 'row', alignItems: 'center', gap: 9},
+  compactContent: { paddingTop: 18 },
+  keyboardContent: {
+    justifyContent: 'flex-start',
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+  brandRow: {
+    position: 'absolute',
+    top: 26,
+    left: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
   brandIcon: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -146,8 +217,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.26)',
   },
-  brandName: {color: '#F4FFF7', fontFamily: fonts.body, fontSize: 13, fontWeight: '900', letterSpacing: 2.2},
-  heroCopy: {marginTop: 92, marginBottom: 18, maxWidth: 520},
+  brandName: {
+    color: '#F4FFF7',
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 2.2,
+  },
+  heroCopy: { marginTop: 92, marginBottom: 18, maxWidth: 520 },
   eyebrow: {
     color: '#BDF6CE',
     fontFamily: fonts.body,
@@ -163,7 +240,7 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     letterSpacing: 0.2,
   },
-  compactTitle: {fontSize: 41, lineHeight: 43},
+  compactTitle: { fontSize: 41, lineHeight: 43 },
   subtitle: {
     color: 'rgba(241, 255, 246, 0.86)',
     fontFamily: fonts.body,
@@ -179,7 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 22,
     paddingBottom: 20,
-    shadowOffset: {width: 0, height: 14},
+    shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.28,
     shadowRadius: 26,
     elevation: 14,
