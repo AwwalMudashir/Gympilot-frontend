@@ -1,4 +1,9 @@
-import { useNavigation, usePreventRemove } from '@react-navigation/native';
+import {
+  useIsFocused,
+  useNavigation,
+  usePreventRemove,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -6,7 +11,9 @@ import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Screen } from '../../components/Screen';
-import { exerciseIcon } from '../../config/exercisePresentation';
+import type { MainStackParamList } from '../../navigation/types';
+import { apiErrorMessage } from '../../services/http';
+import { useVisionWorkoutStore } from '../../store/visionWorkoutStore';
 import { useTheme } from '../../theme/ThemeProvider';
 import { fonts } from '../../theme/typography';
 import type {
@@ -16,10 +23,12 @@ import type {
   WorkoutProgressCheckpoint,
   WorkoutSession,
 } from '../../types/workout';
+import { ExerciseDemonstration } from './ExerciseDemonstration';
 import {
-  ExerciseDemonstration,
-  hasExerciseDemonstration,
-} from './ExerciseDemonstration';
+  createWorkoutCheckpoint,
+  restoredWorkoutProgress,
+  type ExerciseProgress,
+} from './workoutProgress';
 import {
   configureVoiceCoach,
   speakCoachCue,
@@ -31,16 +40,10 @@ import {
   workoutMinimumSeconds,
 } from './workoutTiming';
 
-type ExerciseProgress = Record<
-  string,
-  { completedSets: number; completedRepetitions: number; skipped: boolean }
->;
-
 type Props = {
   workout: WorkoutDay;
   session: WorkoutSession;
   loading: boolean;
-  error?: string;
   onComplete: (results: ExerciseCompletion[]) => Promise<void>;
   onSaveAndExit: (checkpoint: WorkoutProgressCheckpoint) => Promise<void>;
   onSkip: () => void;
@@ -57,28 +60,18 @@ function secondsSince(value?: string) {
   return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
 }
 
-function restoredProgress(session: WorkoutSession): ExerciseProgress {
-  return session.results.reduce<ExerciseProgress>((progress, result) => {
-    progress[result.exerciseId] = {
-      completedSets: result.completedSets,
-      completedRepetitions: result.completedRepetitions,
-      skipped: result.skipped,
-    };
-    return progress;
-  }, {});
-}
-
 export function GuidedWorkoutRunner({
   workout,
   session,
   loading,
-  error,
   onComplete,
   onSaveAndExit,
   onSkip,
 }: Props) {
   const { colors } = useTheme();
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const isFocused = useIsFocused();
   const initialElapsed =
     (session.elapsedSeconds ?? 0) + secondsSince(session.activeSince);
   const initialExerciseIndex = Math.min(
@@ -98,7 +91,7 @@ export function GuidedWorkoutRunner({
   );
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState<ExerciseProgress>(() =>
-    restoredProgress(session),
+    restoredWorkoutProgress(session),
   );
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceAvailable, setVoiceAvailable] = useState(true);
@@ -106,6 +99,13 @@ export function GuidedWorkoutRunner({
   const [savingExit, setSavingExit] = useState(false);
 
   const exercise = workout.exercises[exerciseIndex];
+  const visionResultKey = `${session.id}:${exercise.exercise.id}:${setNumber}`;
+  const visionSetResult = useVisionWorkoutStore(
+    state => state.completedSets[visionResultKey],
+  );
+  const clearVisionSetResult = useVisionWorkoutStore(state => state.clear);
+  const isVisionSquat =
+    exercise.cameraSupported && exercise.exercise.code === 'BODYWEIGHT_SQUAT';
   const requiredSeconds = useMemo(
     () =>
       workoutMinimumSeconds({
@@ -164,7 +164,7 @@ export function GuidedWorkoutRunner({
   }, []);
 
   useEffect(() => {
-    if (!voiceEnabled || paused) {
+    if (!voiceEnabled || paused || !isFocused) {
       stopCoachVoice().catch(() => undefined);
       return;
     }
@@ -196,6 +196,7 @@ export function GuidedWorkoutRunner({
     exercise.restSeconds,
     exercise.sets,
     exercise.targetRepetitions,
+    isFocused,
     paused,
     phase,
     setNumber,
@@ -206,6 +207,7 @@ export function GuidedWorkoutRunner({
     if (
       !voiceEnabled ||
       paused ||
+      !isFocused ||
       phase !== 'COUNTDOWN' ||
       phaseRemaining < 1
     ) {
@@ -218,34 +220,65 @@ export function GuidedWorkoutRunner({
         setVoiceEnabled(false);
       }
     });
-  }, [paused, phase, phaseRemaining, voiceEnabled]);
+  }, [isFocused, paused, phase, phaseRemaining, voiceEnabled]);
 
-  const completionResults = useMemo<ExerciseCompletion[]>(() => {
-    const uniqueResults = new Map<string, ExerciseCompletion>();
+  useEffect(() => {
+    if (!visionSetResult) return;
 
-    workout.exercises.forEach(item => {
-      const completed = progress[item.exercise.id];
-      uniqueResults.set(item.exercise.id, {
-        exerciseId: item.exercise.id,
-        completedSets: completed?.completedSets ?? 0,
-        completedRepetitions: completed?.completedRepetitions ?? 0,
-        skipped: completed?.skipped ?? false,
-      });
+    clearVisionSetResult(visionResultKey);
+    setProgress(current => {
+      const existing = current[exercise.exercise.id];
+
+      return {
+        ...current,
+        [exercise.exercise.id]: {
+          completedSets: Math.max(existing?.completedSets ?? 0, setNumber),
+          completedRepetitions: Math.max(
+            existing?.completedRepetitions ?? 0,
+            Math.min(exercise.targetRepetitions, visionSetResult.repetitions),
+          ),
+          skipped: false,
+        },
+      };
     });
 
-    return Array.from(uniqueResults.values());
-  }, [progress, workout.exercises]);
+    if (setNumber < exercise.sets) {
+      setSetNumber(value => value + 1);
+      setPhase('REST');
+      setPhaseRemaining(exercise.restSeconds);
+    } else if (exerciseIndex < workout.exercises.length - 1) {
+      setExerciseIndex(value => value + 1);
+      setSetNumber(1);
+      setPhase('DEMO');
+      setPhaseRemaining(DEMONSTRATION_SECONDS);
+    } else {
+      setPhase('COOLDOWN');
+      setPhaseRemaining(0);
+    }
+  }, [
+    clearVisionSetResult,
+    exercise.exercise.id,
+    exercise.restSeconds,
+    exercise.sets,
+    exercise.targetRepetitions,
+    exerciseIndex,
+    setNumber,
+    visionResultKey,
+    visionSetResult,
+    workout.exercises.length,
+  ]);
 
-  const checkpoint = useMemo<WorkoutProgressCheckpoint>(
-    () => ({
-      currentExerciseIndex: exerciseIndex,
-      currentSetNumber: setNumber,
-      currentPhase: phase,
-      phaseRemainingSeconds: phaseRemaining,
-      results: completionResults,
-    }),
-    [completionResults, exerciseIndex, phase, phaseRemaining, setNumber],
+  const checkpoint = useMemo(
+    () =>
+      createWorkoutCheckpoint(workout, progress, {
+        exerciseIndex,
+        setNumber,
+        phase,
+        phaseRemaining,
+      }),
+    [exerciseIndex, phase, phaseRemaining, progress, setNumber, workout],
   );
+  const completionResults: ExerciseCompletion[] = checkpoint.results;
 
   usePreventRemove(!allowExit, ({ data }) => {
     if (savingExit) {
@@ -267,12 +300,15 @@ export function GuidedWorkoutRunner({
               await onSaveAndExit(checkpoint);
               setAllowExit(true);
               requestAnimationFrame(() => navigation.dispatch(data.action));
-            } catch {
+            } catch (caught) {
               setPaused(false);
               setSavingExit(false);
               Alert.alert(
                 'Progress not saved',
-                'GymPilot could not save your position. Stay on this screen and try again.',
+                apiErrorMessage(
+                  caught,
+                  'GymBro could not save your position. Stay on this screen and try again.',
+                ),
               );
             }
           },
@@ -281,15 +317,18 @@ export function GuidedWorkoutRunner({
     );
   });
 
-  function finishCurrentSet() {
+  function finishCurrentSet(completedRepetitions = exercise.targetRepetitions) {
     setProgress(current => {
       const existing = current[exercise.exercise.id];
 
       return {
         ...current,
         [exercise.exercise.id]: {
-          completedSets: (existing?.completedSets ?? 0) + 1,
-          completedRepetitions: exercise.targetRepetitions,
+          completedSets: Math.max(existing?.completedSets ?? 0, setNumber),
+          completedRepetitions: Math.max(
+            existing?.completedRepetitions ?? 0,
+            Math.min(exercise.targetRepetitions, completedRepetitions),
+          ),
           skipped: false,
         },
       };
@@ -303,6 +342,17 @@ export function GuidedWorkoutRunner({
     }
 
     moveToNextExercise();
+  }
+
+  function openVisionCoach() {
+    navigation.navigate('WorkoutCamera', {
+      workoutSessionId: session.id,
+      exerciseId: exercise.exercise.id,
+      exerciseName: exercise.exercise.name,
+      targetRepetitions: exercise.targetRepetitions,
+      setNumber,
+      resultKey: visionResultKey,
+    });
   }
 
   function moveToNextExercise() {
@@ -463,25 +513,10 @@ export function GuidedWorkoutRunner({
 
         {phase === 'DEMO' ? (
           <>
-            {hasExerciseDemonstration(exercise.exercise) ? (
-              <ExerciseDemonstration
-                exercise={exercise.exercise}
-                paused={paused}
-              />
-            ) : (
-              <View
-                style={[
-                  styles.heroIcon,
-                  { backgroundColor: colors.primarySoft },
-                ]}
-              >
-                <AppIcon
-                  name={exerciseIcon(exercise.exercise)}
-                  color={colors.primary}
-                  size={76}
-                />
-              </View>
-            )}
+            <ExerciseDemonstration
+              exercise={exercise.exercise}
+              paused={paused}
+            />
             <Text style={[styles.exerciseName, { color: colors.text }]}>
               {exercise.exercise.name}
             </Text>
@@ -521,25 +556,10 @@ export function GuidedWorkoutRunner({
 
         {phase === 'ACTIVE' ? (
           <>
-            {hasExerciseDemonstration(exercise.exercise) ? (
-              <ExerciseDemonstration
-                exercise={exercise.exercise}
-                paused={paused}
-              />
-            ) : (
-              <View
-                style={[
-                  styles.heroIcon,
-                  { backgroundColor: colors.primarySoft },
-                ]}
-              >
-                <AppIcon
-                  name={exerciseIcon(exercise.exercise)}
-                  color={colors.primary}
-                  size={76}
-                />
-              </View>
-            )}
+            <ExerciseDemonstration
+              exercise={exercise.exercise}
+              paused={paused}
+            />
             <Text style={[styles.setLabel, { color: colors.primary }]}>
               SET {setNumber} OF {exercise.sets}
             </Text>
@@ -547,13 +567,14 @@ export function GuidedWorkoutRunner({
               {exercise.targetRepetitions} reps
             </Text>
             <Text style={[styles.guidance, { color: colors.muted }]}>
-              Move with control and keep your breathing steady. Mark the set
-              only after completing the target reps.
+              {isVisionSquat
+                ? 'Position your full body in view. GymBro will count each complete squat and coach your form.'
+                : 'Move with control and keep your breathing steady. Mark the set only after completing the target reps.'}
             </Text>
             <PrimaryButton
-              label="Set complete"
+              label={isVisionSquat ? 'Open camera coach' : 'Set complete'}
               disabled={savingExit}
-              onPress={finishCurrentSet}
+              onPress={isVisionSquat ? openVisionCoach : finishCurrentSet}
             />
           </>
         ) : null}
@@ -626,10 +647,6 @@ export function GuidedWorkoutRunner({
           Voice coaching is unavailable. Check that a text-to-speech voice is
           installed in your phone settings, then tap the muted speaker to retry.
         </Text>
-      ) : null}
-
-      {error ? (
-        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
       ) : null}
 
       <PrimaryButton
@@ -726,12 +743,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
     fontWeight: '800',
-    textAlign: 'center',
-  },
-  error: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    fontWeight: '700',
     textAlign: 'center',
   },
   voiceNotice: {

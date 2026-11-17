@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, StyleSheet, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FormField } from '../../components/FormField';
@@ -19,56 +19,104 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
     email,
     token: linkedToken,
     developmentVerificationToken,
-  } = route.params;
+  } = route.params ?? {};
   const [token, setToken] = useState(
     developmentVerificationToken ?? linkedToken ?? '',
   );
-  const [loading, setLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [notice, setNotice] = useState<{
     message: string;
     tone: 'error' | 'success';
   }>();
   const [tokenError, setTokenError] = useState<string>();
+  const consumedLinkedToken = useRef<string | undefined>(undefined);
+
+  const verifyToken = useCallback(
+    async (candidate: string, showMissingTokenError = true) => {
+      const cleanToken = candidate.trim();
+
+      if (!cleanToken) {
+        if (showMissingTokenError) {
+          setTokenError('Enter the verification token from your email.');
+        }
+        return;
+      }
+
+      setVerifyLoading(true);
+      setTokenError(undefined);
+      setNotice(undefined);
+
+      try {
+        await authApi.verifyEmail(cleanToken);
+        navigation.replace('Login');
+      } catch (caught) {
+        setNotice({
+          message: apiErrorMessage(caught, 'We could not verify this token.'),
+          tone: 'error',
+        });
+      } finally {
+        setVerifyLoading(false);
+      }
+    },
+    [navigation],
+  );
+
   useEffect(() => {
     function acceptVerificationLink(url: string | null | undefined) {
       if (!url?.includes('/verify-email')) return;
+
       const match = url.match(/[?&]token=([^&]+)/);
-      if (match?.[1]) setToken(decodeURIComponent(match[1]));
+      if (!match?.[1]) return;
+
+      let decodedToken: string;
+
+      try {
+        decodedToken = decodeURIComponent(match[1]);
+      } catch {
+        setNotice({
+          message: 'This verification link is malformed. Request a new email.',
+          tone: 'error',
+        });
+        return;
+      }
+
+      setToken(decodedToken);
+
+      if (consumedLinkedToken.current === decodedToken) return;
+
+      consumedLinkedToken.current = decodedToken;
+      verifyToken(decodedToken, false).catch(() => undefined);
     }
+
+    if (linkedToken) {
+      acceptVerificationLink(
+        `gymbro://auth/verify-email?token=${encodeURIComponent(linkedToken)}`,
+      );
+    }
+
     Linking.getInitialURL()
       .then(acceptVerificationLink)
       .catch(() => undefined);
+
     const subscription = Linking.addEventListener('url', event =>
       acceptVerificationLink(event.url),
     );
+
     return () => subscription.remove();
-  }, []);
-  async function verify() {
-    if (!token.trim()) {
-      setTokenError('Enter the verification token from your email.');
-      return;
-    }
-    setLoading(true);
-    setNotice(undefined);
-    try {
-      await authApi.verifyEmail(token.trim());
-      navigation.replace('Login');
-    } catch (caught) {
-      setNotice({
-        message: apiErrorMessage(caught, 'We could not verify this token.'),
-        tone: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [linkedToken, verifyToken]);
+
   async function resend() {
     if (!email) return;
-    setLoading(true);
+
+    setResendLoading(true);
     setNotice(undefined);
+
     try {
       const result = await authApi.resendVerification(email);
+
       if (result.developmentToken) setToken(result.developmentToken);
+
       setNotice({
         message: 'A fresh verification email has been sent.',
         tone: 'success',
@@ -76,9 +124,10 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
     } catch (caught) {
       setNotice({ message: apiErrorMessage(caught), tone: 'error' });
     } finally {
-      setLoading(false);
+      setResendLoading(false);
     }
   }
+
   return (
     <Screen>
       <Text style={[styles.eyebrow, { color: colors.primary }]}>
@@ -105,15 +154,25 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
         }}
       />
       <StatusNotice message={notice?.message} tone={notice?.tone} />
-      <PrimaryButton label="Verify email" loading={loading} onPress={verify} />
       <PrimaryButton
-        disabled={!email}
-        label="Resend token"
-        variant="secondary"
-        loading={loading}
-        onPress={resend}
+        disabled={resendLoading}
+        label="Verify email"
+        loading={verifyLoading}
+        onPress={() => {
+          verifyToken(token).catch(() => undefined);
+        }}
       />
       <PrimaryButton
+        disabled={!email || verifyLoading}
+        label="Resend token"
+        variant="secondary"
+        loading={resendLoading}
+        onPress={() => {
+          resend().catch(() => undefined);
+        }}
+      />
+      <PrimaryButton
+        disabled={verifyLoading || resendLoading}
         label="Back to sign in"
         variant="secondary"
         onPress={() => navigation.replace('Login')}

@@ -8,11 +8,12 @@ import { tokenVault } from './tokenVault';
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 export const apiClient = axios.create({
   baseURL: environment.apiBaseUrl,
-  timeout: 15_000,
+  // Render Free services can need about a minute to wake from an idle state.
+  timeout: 120_000,
 });
 export const visionClient = axios.create({
   baseURL: environment.visionBaseUrl,
-  timeout: 10_000,
+  timeout: 120_000,
 });
 
 apiClient.interceptors.request.use(config => {
@@ -78,16 +79,24 @@ export function apiErrorMessage(
     return error instanceof Error && error.message ? error.message : fallback;
   }
   if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-    return 'The GymPilot server took too long to respond. Check the USB connection and try again.';
+    return 'The GymBro server is taking longer than expected to wake up. Wait a moment and try again.';
   }
   if (!error.response) {
-    return 'Cannot reach the GymPilot server.';
+    return 'Cannot reach the GymBro server. Check your internet connection and try again.';
   }
-  return (
-    error.response?.data?.errors?.[0]?.message ||
-    error.response?.data?.message ||
-    fallback
-  );
+  if ([502, 503, 504].includes(error.response.status)) {
+    return 'The GymBro server is waking up. Wait about a minute and try again.';
+  }
+  const firstError = error.response?.data?.errors?.[0];
+  if (firstError?.message === 'must not be null' && firstError.field) {
+    const field = firstError.field
+      .replace(/^results\[\d+\]\./, '')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .toLowerCase();
+    return `The ${field} is required. Refresh the workout and try again.`;
+  }
+
+  return firstError?.message || error.response?.data?.message || fallback;
 }
 
 export function apiErrorCode(error: unknown) {

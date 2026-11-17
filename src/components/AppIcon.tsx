@@ -16,6 +16,7 @@ import { faClockRotateLeft } from '@fortawesome/free-solid-svg-icons/faClockRota
 import { faDumbbell } from '@fortawesome/free-solid-svg-icons/faDumbbell';
 import { faEye } from '@fortawesome/free-solid-svg-icons/faEye';
 import { faEyeSlash } from '@fortawesome/free-solid-svg-icons/faEyeSlash';
+import { faFireFlameCurved } from '@fortawesome/free-solid-svg-icons/faFireFlameCurved';
 import { faHouse } from '@fortawesome/free-solid-svg-icons/faHouse';
 import { faHandFist } from '@fortawesome/free-solid-svg-icons/faHandFist';
 import { faMoon } from '@fortawesome/free-solid-svg-icons/faMoon';
@@ -62,6 +63,7 @@ const icons = {
   weight: faWeightHanging,
   eye: faEye,
   eyeSlash: faEyeSlash,
+  fire: faFireFlameCurved,
   home: faHouse,
   moon: faMoon,
   pause: faPause,

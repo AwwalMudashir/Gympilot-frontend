@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>GymPilot</string>
+	<string>GymBro</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -34,9 +34,9 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>GymPilot uses the camera to track supported exercises and provide rep counts.</string>
+	<string>GymBro uses the camera to track supported exercises and provide rep counts.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>GymPilot lets you choose a profile picture from your photo library.</string>
+	<string>GymBro lets you choose a profile picture from your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string/>
 	<key>RCTNewArchEnabled</key>

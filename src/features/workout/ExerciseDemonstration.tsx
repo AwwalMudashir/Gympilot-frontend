@@ -4,29 +4,33 @@ import LottieView from 'lottie-react-native';
 
 import { useTheme } from '../../theme/ThemeProvider';
 import type { Exercise } from '../../types/workout';
+import { stickFigureAnimationFor } from './stickFigureAnimations';
 
 const squatAnimation = require('../../assets/animations/squat-demo.json');
 const curlAnimation = require('../../assets/animations/curl-demo.json');
 
-function animationFor(exercise: Pick<Exercise, 'code' | 'name'>) {
-  const description = `${exercise.code} ${exercise.name}`.toUpperCase();
+type DemonstrationExercise = Pick<
+  Exercise,
+  'code' | 'equipment' | 'muscleGroup' | 'name'
+>;
 
-  if (description.includes('SQUAT')) return squatAnimation;
-  if (description.includes('CURL')) return curlAnimation;
-  return undefined;
+function animationFor(exercise: DemonstrationExercise) {
+  const code = exercise.code.toUpperCase();
+
+  if (code === 'BODYWEIGHT_SQUAT') return squatAnimation;
+  if (code === 'BICEP_CURL') return curlAnimation;
+  return stickFigureAnimationFor(exercise.code);
 }
 
-export function hasExerciseDemonstration(
-  exercise: Pick<Exercise, 'code' | 'name'>,
-) {
-  return Boolean(animationFor(exercise));
+export function hasExerciseDemonstration(exercise: DemonstrationExercise) {
+  return Boolean(exercise.code && exercise.name);
 }
 
 export function ExerciseDemonstration({
   exercise,
   paused = false,
 }: {
-  exercise: Pick<Exercise, 'code' | 'name'>;
+  exercise: DemonstrationExercise;
   paused?: boolean;
 }) {
   const { colors } = useTheme();
@@ -40,8 +44,6 @@ export function ExerciseDemonstration({
       animationRef.current?.play();
     }
   }, [paused, source]);
-
-  if (!source) return null;
 
   return (
     <View
@@ -75,5 +77,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     width: '100%',
   },
-  animation: { height: 220, width: 220 },
+  animation: { height: 224, width: 224 },
 });

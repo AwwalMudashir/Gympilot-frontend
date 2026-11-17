@@ -121,7 +121,7 @@ export function AuthScreen({
                         size={15}
                       />
                     </View>
-                    <Text style={styles.brandName}>GYMPILOT</Text>
+                    <Text style={styles.brandName}>GYMBRO</Text>
                   </View>
 
                   <View style={styles.heroCopy}>

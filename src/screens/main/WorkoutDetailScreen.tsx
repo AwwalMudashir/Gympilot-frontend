@@ -112,7 +112,7 @@ export function WorkoutDetailScreen({ route }: Props) {
 
     try {
       setSession(await action());
-      Alert.alert('GymPilot', success);
+      Alert.alert('GymBro', success);
     } catch (caught) {
       const message = apiErrorMessage(caught);
       setError(message);
@@ -131,7 +131,6 @@ export function WorkoutDetailScreen({ route }: Props) {
     try {
       setSession(await workoutApi.pauseSession(session.id, checkpoint));
     } catch (caught) {
-      setError(apiErrorMessage(caught));
       throw caught;
     } finally {
       setActionLoading(false);
@@ -237,7 +236,6 @@ export function WorkoutDetailScreen({ route }: Props) {
         workout={workout}
         session={session}
         loading={actionLoading}
-        error={error}
         onComplete={(results: ExerciseCompletion[]) =>
           runAction(
             () => workoutApi.completeSession(session.id, results),
@@ -300,10 +298,18 @@ export function WorkoutDetailScreen({ route }: Props) {
             {item.exercise.instructions}
           </Text>
           <View style={[styles.rest, { borderTopColor: colors.border }]}>
-            <AppIcon name="clock" color={colors.muted} size={13} />
-            <Text style={[styles.restText, { color: colors.muted }]}>
-              {item.restSeconds}s rest between sets
-            </Text>
+            <View style={styles.exerciseMetaItem}>
+              <AppIcon name="clock" color={colors.muted} size={13} />
+              <Text style={[styles.restText, { color: colors.muted }]}>
+                {item.restSeconds}s rest
+              </Text>
+            </View>
+            <View style={styles.exerciseMetaItem}>
+              <AppIcon name="fire" color={colors.primary} size={13} />
+              <Text style={[styles.calorieText, { color: colors.primary }]}>
+                ~{Math.round(item.estimatedCalories)} kcal
+              </Text>
+            </View>
           </View>
         </Card>
       ))}
@@ -388,11 +394,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     flexDirection: 'row',
-    gap: 7,
+    gap: 16,
     marginTop: 14,
     paddingTop: 12,
   },
   restText: { fontFamily: fonts.body, fontSize: 12 },
+  exerciseMetaItem: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  calorieText: { fontFamily: fonts.body, fontSize: 12, fontWeight: '800' },
   error: { fontFamily: fonts.body, fontSize: 13, fontWeight: '700' },
   finalTitle: { fontFamily: fonts.displaySemibold, fontSize: 23 },
 });

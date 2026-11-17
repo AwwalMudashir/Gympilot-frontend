@@ -5,7 +5,7 @@ name: Register, verify, onboard and generate a plan
 - launchApp:
     clearState: true
 - assertVisible: Welcome back
-- tapOn: New to GymPilot? Create an account
+- tapOn: New to GymBro? Create an account
 - tapOn:
     id: register-firstName
 - inputText: Maestro
@@ -17,10 +17,10 @@ name: Register, verify, onboard and generate a plan
 - inputText: ${output.email}
 - tapOn:
     id: register-password
-- inputText: GymPilot!2026Secure
+- inputText: GymBro!2026Secure
 - tapOn:
     id: register-confirmPassword
-- inputText: GymPilot!2026Secure
+- inputText: GymBro!2026Secure
 - hideKeyboard
 - tapOn: Create account
 - extendedWaitUntil:

@@ -5,16 +5,13 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- The artwork deliberately occupies the central half of the viewport so
-         Android's splash-screen mask never enlarges or crops the mark. -->
+    <!-- Keep the GB mark inside Android's safe splash-screen area. -->
     <path
         android:fillColor="#17201B"
         android:pathData="M34,31 L74,31 Q79,31 79,36 L79,72 Q79,77 74,77 L34,77 Q29,77 29,72 L29,36 Q29,31 34,31 Z" />
-    <!-- Separate block strokes keep both letters unmistakable at Android's
-         small system-splash size. The former single G path read as a C. -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M37,42 H53 V47 H37 Z M37,42 H42 V66 H37 Z M37,61 H53 V66 H37 Z M48,52 H53 V66 H48 Z M45,52 H53 V57 H45 Z M57,42 H62 V66 H57 Z M57,42 H70 V47 H57 Z M66,42 H71 V57 H66 Z M57,52 H70 V57 H57 Z" />
+        android:pathData="M37,42 H53 V47 H37 Z M37,42 H42 V66 H37 Z M37,61 H53 V66 H37 Z M48,52 H53 V66 H48 Z M45,52 H53 V57 H45 Z M57,42 H62 V66 H57 Z M57,42 H69 V47 H57 Z M66,45 H71 V54 H66 Z M57,52 H69 V57 H57 Z M66,55 H71 V63 H66 Z M57,61 H69 V66 H57 Z" />
     <path
         android:fillColor="#3FA36C"
         android:pathData="M34,70 L38,70 L38,65 L42,65 L42,68 L66,68 L66,65 L70,65 L70,70 L74,70 L74,76 L70,76 L70,79 L66,79 L66,74 L42,74 L42,79 L38,79 L38,76 L34,76 Z" />

@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '../components/AppIcon';
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
@@ -15,6 +15,7 @@ import { ExerciseCatalogueScreen } from '../screens/main/ExerciseCatalogueScreen
 import { ExerciseDetailScreen } from '../screens/main/ExerciseDetailScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { WorkoutHistoryScreen } from '../screens/main/WorkoutHistoryScreen';
+import { WorkoutCameraScreen } from '../screens/main/WorkoutCameraScreen';
 import { WeeklyPlanScreen } from '../screens/main/WeeklyPlanScreen';
 import { WorkoutDetailScreen } from '../screens/main/WorkoutDetailScreen';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
@@ -51,25 +52,15 @@ const ProfileTabIcon = ({ color, size }: TabIconProps) => (
 function SplashBrand() {
   return (
     <View
-      accessibilityLabel="GymPilot"
+      accessibilityLabel="GymBro"
       accessibilityRole="image"
       style={styles.splashBrand}
     >
-      <View style={styles.splashMark}>
-        <Text style={styles.splashMonogram}>GP</Text>
-        <View style={styles.dumbbell}>
-          <View style={styles.dumbbellPlateLarge} />
-          <View style={styles.dumbbellPlateSmall} />
-          <View style={styles.dumbbellBar} />
-          <View style={styles.dumbbellPlateSmall} />
-          <View style={styles.dumbbellPlateLarge} />
-        </View>
-      </View>
-
-      <View style={styles.wordmark}>
-        <Text style={styles.wordmarkGym}>GYM</Text>
-        <Text style={styles.wordmarkPilot}>PILOT</Text>
-      </View>
+      <Image
+        resizeMode="contain"
+        source={require('../assets/branding/gymbro-wordmark.png')}
+        style={styles.wordmark}
+      />
     </View>
   );
 }
@@ -174,6 +165,11 @@ function SignedInNavigator() {
         name="ExerciseDetail"
         options={{ title: 'Exercise guide' }}
       />
+      <MainStack.Screen
+        component={WorkoutCameraScreen}
+        name="WorkoutCamera"
+        options={{ headerShown: false }}
+      />
     </MainStack.Navigator>
   );
 }
@@ -244,70 +240,9 @@ const styles = StyleSheet.create({
   splashBrand: {
     alignItems: 'center',
   },
-  splashMark: {
-    alignItems: 'center',
-    backgroundColor: '#17201B',
-    borderRadius: 22,
-    elevation: 5,
-    height: 78,
-    justifyContent: 'center',
-    shadowColor: '#152019',
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    width: 78,
-  },
-  splashMonogram: {
-    color: '#FFFFFF',
-    fontFamily: fonts.display,
-    fontSize: 34,
-    letterSpacing: -1,
-    lineHeight: 38,
-  },
-  dumbbell: {
-    alignItems: 'center',
-    bottom: -6,
-    flexDirection: 'row',
-    height: 16,
-    justifyContent: 'center',
-    position: 'absolute',
-  },
-  dumbbellBar: {
-    backgroundColor: '#3FA36C',
-    height: 4,
-    width: 29,
-  },
-  dumbbellPlateLarge: {
-    backgroundColor: '#3FA36C',
-    borderRadius: 2,
-    height: 16,
-    width: 5,
-  },
-  dumbbellPlateSmall: {
-    backgroundColor: '#3FA36C',
-    borderRadius: 1,
-    height: 11,
-    marginHorizontal: 2,
-    width: 4,
-  },
   wordmark: {
-    alignItems: 'baseline',
-    flexDirection: 'row',
-    marginTop: 23,
-  },
-  wordmarkGym: {
-    color: '#17201B',
-    fontFamily: fonts.display,
-    fontSize: 43,
-    letterSpacing: -0.8,
-    lineHeight: 48,
-  },
-  wordmarkPilot: {
-    color: '#3FA36C',
-    fontFamily: fonts.display,
-    fontSize: 43,
-    letterSpacing: -0.8,
-    lineHeight: 48,
+    height: 58,
+    width: 174,
   },
   splashTagline: {
     color: '#6E7872',
@@ -315,7 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 2,
-    marginTop: 8,
+    marginTop: 14,
   },
   splashLoader: { marginTop: 29, transform: [{ scale: 0.82 }] },
 });

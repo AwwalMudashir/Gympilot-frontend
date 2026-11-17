@@ -10,7 +10,7 @@ import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
 import { StatusNotice } from '../../components/StatusNotice';
 import type { MainStackParamList } from '../../navigation/types';
-import { apiErrorMessage } from '../../services/http';
+import { apiErrorCode, apiErrorMessage } from '../../services/http';
 import { workoutApi } from '../../services/workoutApi';
 import { useTheme } from '../../theme/ThemeProvider';
 import { fonts } from '../../theme/typography';
@@ -21,6 +21,9 @@ export function WeeklyPlanScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [plan, setPlan] = useState<WorkoutPlan>();
+  const [planState, setPlanState] = useState<'unknown' | 'missing' | 'ready'>(
+    'unknown',
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
@@ -28,9 +31,16 @@ export function WeeklyPlanScreen() {
     setLoading(true);
     setError(undefined);
     try {
-      setPlan(await workoutApi.currentPlan());
+      const currentPlan = await workoutApi.currentPlan();
+      setPlan(currentPlan);
+      setPlanState('ready');
     } catch (caught) {
-      setError(apiErrorMessage(caught));
+      if (apiErrorCode(caught) === 'RESOURCE_NOT_FOUND') {
+        setPlan(undefined);
+        setPlanState('missing');
+      } else {
+        setError(apiErrorMessage(caught));
+      }
     } finally {
       setLoading(false);
     }
@@ -40,7 +50,9 @@ export function WeeklyPlanScreen() {
     setLoading(true);
     setError(undefined);
     try {
-      setPlan(await workoutApi.generatePlan());
+      const generatedPlan = await workoutApi.generatePlan();
+      setPlan(generatedPlan);
+      setPlanState('ready');
     } catch (caught) {
       setError(apiErrorMessage(caught));
     } finally {
@@ -52,7 +64,9 @@ export function WeeklyPlanScreen() {
     setLoading(true);
     setError(undefined);
     try {
-      setPlan(await workoutApi.regeneratePlan());
+      const regeneratedPlan = await workoutApi.regeneratePlan();
+      setPlan(regeneratedPlan);
+      setPlanState('ready');
     } catch (caught) {
       setError(apiErrorMessage(caught));
     } finally {
@@ -84,19 +98,28 @@ export function WeeklyPlanScreen() {
         Your training plan
       </Text>
       {plan && error ? <StatusNotice message={error} tone="error" /> : null}
-      {loading ? (
+      {loading && planState === 'unknown' ? (
         <StateView
           title="Building your week"
           message="Balancing your goal, schedule and available equipment."
         />
-      ) : !plan ? (
+      ) : planState === 'missing' ? (
         <StateView
           title="Your plan is ready to be built"
-          message={
-            error ?? 'Generate a personalised week from your fitness profile.'
-          }
+          message="Generate a personalised week from your fitness profile."
           actionLabel="Generate my plan"
           onAction={generate}
+        />
+      ) : !plan ? (
+        <StateView
+          title="Your saved plan could not be synced"
+          message={
+            error ??
+            'Your plan has not been removed. Check the connection and try again.'
+          }
+          icon="retry"
+          actionLabel="Try again"
+          onAction={load}
         />
       ) : (
         <>

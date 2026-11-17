@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android --port 8081",
+    "android": "react-native run-android --port 8081 --active-arch-only --no-packager",
+    "apk:release": "cd android && gradlew.bat assembleRelease",
     "usb:reverse": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:8080 tcp:8080 && adb reverse tcp:8000 tcp:8000",
     "ios": "react-native run-ios",
     "lint": "eslint .",

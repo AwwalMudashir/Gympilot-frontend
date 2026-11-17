@@ -64,7 +64,7 @@ export function AdminDashboardScreen() {
       setUsers(current =>
         current.map(user => (user.id === updated.id ? updated : user)),
       );
-      Alert.alert('GymPilot admin', successMessage);
+      Alert.alert('GymBro admin', successMessage);
     } catch (caught) {
       const message = apiErrorMessage(caught, 'Could not update this account.');
       setError(message);
@@ -163,8 +163,12 @@ export function AdminDashboardScreen() {
       <View style={styles.headingRow}>
         <View style={styles.flex}>
           <Text style={[styles.eyebrow, { color: colors.primary }]}>ADMIN</Text>
-          <Text style={[styles.title, { color: colors.text }]}>User management</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>Manage access without touching database tables manually.</Text>
+          <Text style={[styles.title, { color: colors.text }]}>
+            User management
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>
+            Manage access without touching database tables manually.
+          </Text>
         </View>
         <View style={[styles.shield, { backgroundColor: colors.primarySoft }]}>
           <AppIcon color={colors.primary} name="shield" size={24} />
@@ -184,14 +188,24 @@ export function AdminDashboardScreen() {
         value={query}
       />
 
-      {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+      ) : null}
 
-      <PrimaryButton label="Refresh accounts" onPress={load} variant="secondary" />
+      <PrimaryButton
+        label="Refresh accounts"
+        onPress={load}
+        variant="secondary"
+      />
 
       {visibleUsers.length === 0 ? (
         <Card>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No matching users</Text>
-          <Text style={[styles.emptyText, { color: colors.muted }]}>Try a different name or email address.</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+            No matching users
+          </Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>
+            Try a different name or email address.
+          </Text>
         </Card>
       ) : null}
 
@@ -203,27 +217,55 @@ export function AdminDashboardScreen() {
           <Card key={user.id}>
             <View style={styles.userHeader}>
               <View style={styles.flex}>
-                <Text style={[styles.userName, { color: colors.text }]}>{user.firstName} {user.lastName}</Text>
-                <Text style={[styles.email, { color: colors.muted }]}>{user.email}</Text>
+                <Text style={[styles.userName, { color: colors.text }]}>
+                  {user.firstName} {user.lastName}
+                </Text>
+                <Text style={[styles.email, { color: colors.muted }]}>
+                  {user.email}
+                </Text>
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: active ? colors.primarySoft : `${colors.danger}18` }]}>
-                <Text style={[styles.statusText, { color: active ? colors.primary : colors.danger }]}>{user.status}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: active
+                      ? colors.primarySoft
+                      : `${colors.danger}18`,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: active ? colors.primary : colors.danger },
+                  ]}
+                >
+                  {user.status}
+                </Text>
               </View>
             </View>
 
             <View style={[styles.details, { borderTopColor: colors.border }]}>
-              <Text style={[styles.detail, { color: colors.muted }]}>{user.emailVerified ? 'Verified' : 'Unverified'}</Text>
-              <Text style={[styles.detail, { color: colors.muted }]}>Joined {new Date(user.createdAt).toLocaleDateString()}</Text>
+              <Text style={[styles.detail, { color: colors.muted }]}>
+                {user.emailVerified ? 'Verified' : 'Unverified'}
+              </Text>
+              <Text style={[styles.detail, { color: colors.muted }]}>
+                Joined {new Date(user.createdAt).toLocaleDateString()}
+              </Text>
             </View>
 
             {protectedAdmin ? (
-              <Text style={[styles.protectedText, { color: colors.warning }]}>Administrator accounts are protected from dashboard changes.</Text>
+              <Text style={[styles.protectedText, { color: colors.warning }]}>
+                Administrator accounts are protected from dashboard changes.
+              </Text>
             ) : (
               <View style={styles.actions}>
                 <View style={styles.action}>
                   <PrimaryButton
                     disabled={Boolean(busyUserId)}
-                    label={user.status === 'INACTIVE' ? 'Reactivate' : 'Deactivate'}
+                    label={
+                      user.status === 'INACTIVE' ? 'Reactivate' : 'Deactivate'
+                    }
                     loading={busy}
                     onPress={() => confirmStatusChange(user)}
                     variant="secondary"
@@ -244,12 +286,24 @@ export function AdminDashboardScreen() {
         );
       })}
 
-      <PrimaryButton label="Sign out" onPress={() => logout()} variant="secondary" />
+      <PrimaryButton
+        label="Sign out"
+        onPress={() => logout()}
+        variant="secondary"
+      />
     </Screen>
   );
 }
 
-function Metric({ label, value, color }: { label: string; value: number; color: string }) {
+function Metric({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
   const { colors } = useTheme();
   return (
     <Card style={styles.metricCard}>
@@ -262,25 +316,69 @@ function Metric({ label, value, color }: { label: string; value: number; color: 
 const styles = StyleSheet.create({
   headingRow: { alignItems: 'flex-start', flexDirection: 'row', gap: 14 },
   flex: { flex: 1 },
-  eyebrow: { fontFamily: fonts.body, fontSize: 11, fontWeight: '900', letterSpacing: 1.6 },
+  eyebrow: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+  },
   title: { fontFamily: fonts.display, fontSize: 38, lineHeight: 43 },
-  subtitle: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, marginTop: 5 },
-  shield: { alignItems: 'center', borderRadius: 18, height: 50, justifyContent: 'center', width: 50 },
+  subtitle: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 5,
+  },
+  shield: {
+    alignItems: 'center',
+    borderRadius: 18,
+    height: 50,
+    justifyContent: 'center',
+    width: 50,
+  },
   metrics: { flexDirection: 'row', gap: 10 },
   metricCard: { flex: 1, padding: 13 },
   metricValue: { fontFamily: fonts.display, fontSize: 28 },
-  metricLabel: { fontFamily: fonts.body, fontSize: 11, fontWeight: '800', marginTop: 2 },
-  error: { fontFamily: fonts.body, fontSize: 13, fontWeight: '700', lineHeight: 19 },
+  metricLabel: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  error: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+  },
   emptyTitle: { fontFamily: fonts.displaySemibold, fontSize: 21 },
   emptyText: { fontFamily: fonts.body, fontSize: 13, marginTop: 5 },
   userHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 10 },
   userName: { fontFamily: fonts.displaySemibold, fontSize: 22 },
   email: { fontFamily: fonts.body, fontSize: 13, marginTop: 3 },
   statusBadge: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 6 },
-  statusText: { fontFamily: fonts.body, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
-  details: { borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, paddingTop: 12 },
+  statusText: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  details: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 14,
+    paddingTop: 12,
+  },
   detail: { fontFamily: fonts.body, fontSize: 11, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: 10, marginTop: 16 },
   action: { flex: 1 },
-  protectedText: { fontFamily: fonts.body, fontSize: 12, fontWeight: '700', lineHeight: 18, marginTop: 14 },
+  protectedText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginTop: 14,
+  },
 });

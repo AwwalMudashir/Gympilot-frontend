@@ -93,6 +93,27 @@ export function ExerciseDetailScreen({ route }: Props) {
       )}
 
       <Card>
+        <View style={styles.calorieHeader}>
+          <View
+            style={[
+              styles.calorieIcon,
+              { backgroundColor: colors.primarySoft },
+            ]}
+          >
+            <AppIcon name="fire" color={colors.primary} size={16} />
+          </View>
+          <View style={styles.calorieContent}>
+            <Text style={[styles.calorieValue, { color: colors.text }]}>
+              ~{Math.round(exercise.estimatedCaloriesPer10Minutes)} kcal
+            </Text>
+            <Text style={[styles.calorieLabel, { color: colors.muted }]}>
+              Estimated per 10 active minutes at your current weight
+            </Text>
+          </View>
+        </View>
+      </Card>
+
+      <Card>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           How to perform it
         </Text>
@@ -184,6 +205,31 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: fonts.displaySemibold,
     fontSize: 25,
+  },
+  calorieHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  calorieIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    flexShrink: 0,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  calorieContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  calorieValue: { fontFamily: fonts.displaySemibold, fontSize: 21 },
+  calorieLabel: {
+    flexShrink: 1,
+    fontFamily: fonts.body,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 2,
   },
   instructions: {
     fontFamily: fonts.body,

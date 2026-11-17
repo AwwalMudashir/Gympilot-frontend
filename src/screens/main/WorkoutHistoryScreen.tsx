@@ -68,6 +68,9 @@ export function WorkoutHistoryScreen() {
           const skippedExercises = session.results.filter(
             result => result.skipped,
           ).length;
+          const visionResults = session.results.filter(
+            result => result.formScore !== undefined,
+          );
           const statusColor =
             session.status === 'COMPLETED'
               ? colors.primary
@@ -100,9 +103,7 @@ export function WorkoutHistoryScreen() {
               {session.status === 'COMPLETED' ? (
                 <Text style={[styles.summary, { color: colors.muted }]}>
                   {completedExercises} exercises completed
-                  {skippedExercises > 0
-                    ? ` · ${skippedExercises} skipped`
-                    : ''}
+                  {skippedExercises > 0 ? ` · ${skippedExercises} skipped` : ''}
                   {session.difficultyRating
                     ? ` · ${session.difficultyRating
                         .replace('_', ' ')
@@ -110,6 +111,41 @@ export function WorkoutHistoryScreen() {
                     : ''}
                 </Text>
               ) : null}
+              {visionResults.map(result => (
+                <View
+                  key={result.exerciseId}
+                  style={[
+                    styles.visionSummary,
+                    {
+                      backgroundColor: colors.primarySoft,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.visionTitleRow}>
+                    <AppIcon name="camera" color={colors.primary} size={13} />
+                    <Text style={[styles.visionTitle, { color: colors.text }]}>
+                      {result.exerciseName}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[styles.visionMetrics, { color: colors.primary }]}
+                  >
+                    {result.completedRepetitions} reps ·{' '}
+                    {result.formScore?.toFixed(0)}% form
+                    {result.averageTempoSeconds
+                      ? ` · ${result.averageTempoSeconds.toFixed(1)}s tempo`
+                      : ''}
+                  </Text>
+                  {result.formFlags.length > 0 ? (
+                    <Text style={[styles.formFlags, { color: colors.muted }]}>
+                      {result.formFlags
+                        .map(flag => flag.replaceAll('_', ' ').toLowerCase())
+                        .join(' · ')}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
             </Card>
           );
         })
@@ -139,4 +175,19 @@ const styles = StyleSheet.create({
   meta: { fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   status: { fontFamily: fonts.body, fontSize: 10, fontWeight: '900' },
   summary: { fontFamily: fonts.body, fontSize: 12, marginTop: 12 },
+  visionSummary: {
+    borderRadius: 13,
+    borderWidth: 1,
+    gap: 5,
+    marginTop: 12,
+    padding: 12,
+  },
+  visionTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 7 },
+  visionTitle: { fontFamily: fonts.body, fontSize: 12, fontWeight: '900' },
+  visionMetrics: { fontFamily: fonts.body, fontSize: 12, fontWeight: '800' },
+  formFlags: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    textTransform: 'capitalize',
+  },
 });

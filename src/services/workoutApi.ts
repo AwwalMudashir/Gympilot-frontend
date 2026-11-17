@@ -8,6 +8,7 @@ import type {
   WorkoutPlan,
   WorkoutProgressCheckpoint,
   WorkoutSession,
+  WorkoutAnalytics,
 } from '../types/workout';
 import { apiClient, dataOf } from './http';
 export const workoutApi = {
@@ -99,6 +100,11 @@ export const workoutApi = {
       await apiClient.get<ApiEnvelope<WorkoutSession[]>>(
         '/workouts/sessions/history',
       ),
+    );
+  },
+  async analytics() {
+    return dataOf(
+      await apiClient.get<ApiEnvelope<WorkoutAnalytics>>('/workouts/analytics'),
     );
   },
 };

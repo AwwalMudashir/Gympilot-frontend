@@ -7,6 +7,7 @@ export type Exercise = {
   muscleGroup: string;
   equipment: string;
   cameraSupported: boolean;
+  estimatedCaloriesPer10Minutes: number;
 };
 export type WorkoutPlanItem = {
   id: string;
@@ -16,11 +17,13 @@ export type WorkoutPlanItem = {
   restSeconds: number;
   order: number;
   cameraSupported: boolean;
+  estimatedCalories: number;
 };
 export type WorkoutDay = {
   day: DayOfWeek;
   title: string;
   estimatedMinutes: number;
+  estimatedCalories: number;
   exercises: WorkoutPlanItem[];
 };
 export type WorkoutPlan = {
@@ -65,6 +68,10 @@ export type ExerciseResult = {
   plannedRepetitions: number;
   completedRepetitions: number;
   skipped: boolean;
+  caloriesBurned: number;
+  averageTempoSeconds?: number;
+  formScore?: number;
+  formFlags: string[];
 };
 export type ExerciseCompletion = {
   exerciseId: string;
@@ -96,5 +103,29 @@ export type WorkoutSession = {
   currentPhase: WorkoutPhase;
   phaseRemainingSeconds: number;
   elapsedSeconds: number;
+  caloriesBurned: number;
   results: ExerciseResult[];
+};
+
+export type DailyCalories = {
+  date: string;
+  caloriesBurned: number;
+  completedWorkouts: number;
+};
+
+export type ExerciseCalories = {
+  exerciseId: string;
+  exerciseName: string;
+  caloriesBurned: number;
+  completedSets: number;
+};
+
+export type WorkoutAnalytics = {
+  weekStartDate: string;
+  todayCalories: number;
+  weekCalories: number;
+  completedWorkouts: number;
+  completedExercises: number;
+  dailyBreakdown: DailyCalories[];
+  exerciseBreakdown: ExerciseCalories[];
 };

@@ -21,4 +21,12 @@ export type MainStackParamList = {
   AdminDashboard: undefined;
   WorkoutDetail: { day?: import('../types/profile').DayOfWeek } | undefined;
   ExerciseDetail: { exercise: import('../types/workout').Exercise };
+  WorkoutCamera: {
+    workoutSessionId: string;
+    exerciseId: string;
+    exerciseName: string;
+    targetRepetitions: number;
+    setNumber: number;
+    resultKey: string;
+  };
 };

@@ -9,6 +9,7 @@ const workout: WorkoutDay = {
   day: 'MONDAY',
   title: 'Full body',
   estimatedMinutes: 9,
+  estimatedCalories: 20,
   exercises: [
     {
       id: 'item-1',
@@ -20,12 +21,14 @@ const workout: WorkoutDay = {
         muscleGroup: 'Lower body',
         equipment: 'Bodyweight',
         cameraSupported: true,
+        estimatedCaloriesPer10Minutes: 50,
       },
       sets: 3,
       targetRepetitions: 10,
       restSeconds: 60,
       order: 1,
       cameraSupported: true,
+      estimatedCalories: 20,
     },
   ],
 };

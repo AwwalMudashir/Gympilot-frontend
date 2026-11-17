@@ -18,6 +18,7 @@ function exercise(
     muscleGroup,
     equipment,
     cameraSupported,
+    estimatedCaloriesPer10Minutes: 42,
   };
 }
 

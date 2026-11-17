@@ -1,14 +1,16 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
+import { StatusNotice } from '../../components/StatusNotice';
+import { DashboardCalorieCard } from '../../components/WorkoutAnalyticsView';
 import type { MainStackParamList } from '../../navigation/types';
-import { apiErrorMessage } from '../../services/http';
+import { apiErrorCode, apiErrorMessage } from '../../services/http';
 import { profileApi } from '../../services/profileApi';
 import { workoutApi } from '../../services/workoutApi';
 import { useAuthStore } from '../../store/authStore';
@@ -17,6 +19,7 @@ import { fonts } from '../../theme/typography';
 import type { Profile } from '../../types/profile';
 import type {
   TodayWorkout,
+  WorkoutAnalytics,
   WorkoutDay,
   WorkoutPlan,
 } from '../../types/workout';
@@ -29,50 +32,103 @@ export function DashboardScreen() {
   const [today, setToday] = useState<TodayWorkout>();
   const [plan, setPlan] = useState<WorkoutPlan>();
   const [profile, setProfile] = useState<Profile>();
+  const [analytics, setAnalytics] = useState<WorkoutAnalytics>();
+  const [planState, setPlanState] = useState<'unknown' | 'missing' | 'ready'>(
+    'unknown',
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-  async function load() {
+
+  const load = useCallback(async () => {
     setLoading(true);
     setError(undefined);
-    try {
-      const profileValue = await profileApi.get();
-      setProfile(profileValue);
-      try {
-        const [todayValue, planValue] = await Promise.all([
-          workoutApi.today(),
-          workoutApi.currentPlan(),
-        ]);
-        setToday(todayValue);
-        setPlan(planValue);
-      } catch {
-        setToday(undefined);
-        setPlan(undefined);
-      }
-    } catch (caught) {
-      setError(apiErrorMessage(caught));
-    } finally {
-      setLoading(false);
+
+    const [profileResult, planResult, todayResult, analyticsResult] =
+      await Promise.allSettled([
+        profileApi.get(),
+        workoutApi.currentPlan(),
+        workoutApi.today(),
+        workoutApi.analytics(),
+      ]);
+
+    const syncErrors: string[] = [];
+
+    if (profileResult.status === 'fulfilled') {
+      setProfile(profileResult.value);
+    } else {
+      syncErrors.push(apiErrorMessage(profileResult.reason));
     }
-  }
+
+    if (planResult.status === 'fulfilled') {
+      setPlan(planResult.value);
+      setPlanState('ready');
+    } else if (apiErrorCode(planResult.reason) === 'RESOURCE_NOT_FOUND') {
+      setPlan(undefined);
+      setPlanState('missing');
+    } else {
+      syncErrors.push(
+        apiErrorMessage(
+          planResult.reason,
+          'Your saved workout plan could not be synced.',
+        ),
+      );
+    }
+
+    if (todayResult.status === 'fulfilled') {
+      setToday(todayResult.value);
+    } else if (apiErrorCode(todayResult.reason) === 'RESOURCE_NOT_FOUND') {
+      if (
+        planResult.status === 'rejected' &&
+        apiErrorCode(planResult.reason) === 'RESOURCE_NOT_FOUND'
+      ) {
+        setToday(undefined);
+      }
+    } else {
+      syncErrors.push(
+        apiErrorMessage(
+          todayResult.reason,
+          "Today's workout could not be refreshed.",
+        ),
+      );
+    }
+
+    if (analyticsResult.status === 'fulfilled') {
+      setAnalytics(analyticsResult.value);
+    }
+
+    setError(syncErrors[0]);
+    setLoading(false);
+  }, []);
+
   async function generate() {
     setLoading(true);
+    setError(undefined);
+
     try {
-      await workoutApi.generatePlan();
+      const generatedPlan = await workoutApi.generatePlan();
+      setPlan(generatedPlan);
+      setPlanState('ready');
       await load();
     } catch (caught) {
       setError(apiErrorMessage(caught));
       setLoading(false);
     }
   }
-  useEffect(() => {
-    load();
-  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
   const greeting =
     new Date().getHours() < 12
       ? 'Good morning'
       : new Date().getHours() < 18
       ? 'Good afternoon'
       : 'Good evening';
+
+  const firstLoad = loading && !profile && planState === 'unknown';
+
   return (
     <Screen scroll>
       <View style={styles.header}>
@@ -100,25 +156,27 @@ export function DashboardScreen() {
           </View>
         )}
       </View>
-      {loading ? (
+      {firstLoad ? (
         <StateView
           title="Preparing your day"
           message="Syncing your plan and training profile."
         />
-      ) : error ? (
+      ) : !profile ? (
         <StateView
           title="Dashboard unavailable"
-          message={error}
+          message={error ?? 'Your training profile could not be loaded.'}
           icon="retry"
           actionLabel="Try again"
           onAction={load}
         />
       ) : (
         <>
+          {error ? <StatusNotice message={error} tone="error" /> : null}
+
           <Text style={[styles.section, { color: colors.text }]}>
             Today’s focus
           </Text>
-          {!plan ? (
+          {planState === 'missing' ? (
             <Card>
               <StateView
                 title="Build your first week"
@@ -127,7 +185,27 @@ export function DashboardScreen() {
                 onAction={generate}
               />
             </Card>
-          ) : today?.restDay ? (
+          ) : !plan ? (
+            <Card>
+              <StateView
+                title="Your saved plan could not be synced"
+                message="Your plan has not been removed. Check the connection and try loading it again."
+                icon="retry"
+                actionLabel="Try again"
+                onAction={load}
+              />
+            </Card>
+          ) : !today ? (
+            <Card>
+              <StateView
+                title="Today’s schedule is unavailable"
+                message="Your weekly plan is still saved. Refresh to load today’s session."
+                icon="retry"
+                actionLabel="Refresh schedule"
+                onAction={load}
+              />
+            </Card>
+          ) : today.restDay ? (
             <Card style={{ backgroundColor: colors.primarySoft }}>
               <View style={styles.heroTop}>
                 <View
@@ -179,7 +257,8 @@ export function DashboardScreen() {
                   style={[styles.heroBody, { color: colors.textOnPrimary }]}
                 >
                   {today?.workout?.exercises.length} exercises · about{' '}
-                  {today?.workout?.estimatedMinutes} minutes
+                  {today?.workout?.estimatedMinutes} minutes · ~
+                  {Math.round(today?.workout?.estimatedCalories ?? 0)} kcal
                 </Text>
                 <View style={styles.heroAction}>
                   <Text style={[styles.start, { color: colors.textOnPrimary }]}>
@@ -198,14 +277,27 @@ export function DashboardScreen() {
               }
             />
           ) : null}
+          {analytics ? (
+            <>
+              <Text style={[styles.section, { color: colors.text }]}>
+                Your activity
+              </Text>
+              <DashboardCalorieCard analytics={analytics} />
+            </>
+          ) : null}
           <Text style={[styles.section, { color: colors.text }]}>
             At a glance
           </Text>
           <View style={styles.grid}>
             <Metric
               icon="dumbbell"
-              label="Training"
-              value={plan ? `${plan.workoutDays} days` : 'Not set'}
+              label="Training goal"
+              value={formatGoal(profile.fitnessGoal)}
+            />
+            <Metric
+              icon="dumbbell"
+              label="Weekly schedule"
+              value={`${profile.daysPerWeek} days`}
             />
             <Metric
               icon="clock"
@@ -346,6 +438,12 @@ function TomorrowPreview({
                   {workout.estimatedMinutes} min
                 </Text>
               </View>
+              <View style={styles.tomorrowStat}>
+                <AppIcon name="fire" color={colors.primary} size={13} />
+                <Text style={[styles.tomorrowMeta, { color: colors.primary }]}>
+                  ~{Math.round(workout.estimatedCalories)} kcal
+                </Text>
+              </View>
             </View>
             <View style={styles.tomorrowAction}>
               <Text
@@ -395,11 +493,28 @@ function Metric({
       >
         <AppIcon name={icon} color={colors.primary} size={17} />
       </View>
-      <Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text>
+      <Text
+        style={[
+          styles.metricValue,
+          value.length > 12 ? styles.metricValueCompact : undefined,
+          { color: colors.text },
+        ]}
+      >
+        {value}
+      </Text>
       <Text style={[styles.metricLabel, { color: colors.muted }]}>{label}</Text>
     </Card>
   );
 }
+
+function formatGoal(goal: Profile['fitnessGoal']) {
+  return goal
+    .toLowerCase()
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
@@ -496,7 +611,12 @@ const styles = StyleSheet.create({
     lineHeight: 29,
     marginTop: 16,
   },
-  tomorrowStats: { flexDirection: 'row', gap: 18, marginTop: 9 },
+  tomorrowStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    marginTop: 9,
+  },
   tomorrowStat: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   tomorrowMeta: { fontFamily: fonts.body, fontSize: 12 },
   tomorrowAction: {
@@ -526,6 +646,7 @@ const styles = StyleSheet.create({
     width: 34,
   },
   metricValue: { fontFamily: fonts.display, fontSize: 27, marginTop: 12 },
+  metricValueCompact: { fontSize: 21, lineHeight: 24 },
   metricLabel: { fontFamily: fonts.body, fontSize: 12 },
   weekRow: {
     alignItems: 'center',

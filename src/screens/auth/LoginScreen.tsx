@@ -47,7 +47,7 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <AuthScreen
       softOverlay
-      eyebrow="GYMPILOT VISION"
+      eyebrow="GYMBRO VISION"
       title="Welcome back"
       subtitle="Your next strong session starts here."
     >
@@ -100,7 +100,7 @@ export function LoginScreen({ navigation }: Props) {
       />
       <Pressable onPress={() => navigation.navigate('Register')}>
         <Text style={[styles.link, { color: colors.primary }]}>
-          New to GymPilot? Create an account
+          New to GymBro? Create an account
         </Text>
       </Pressable>
     </AuthScreen>

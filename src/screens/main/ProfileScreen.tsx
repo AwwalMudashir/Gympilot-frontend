@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
@@ -7,6 +8,7 @@ import { FormField } from '../../components/FormField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
+import { DetailedWorkoutAnalytics } from '../../components/WorkoutAnalyticsView';
 import { equipmentGroups } from '../../config/trainingOptions';
 import { apiErrorMessage } from '../../services/http';
 import { profileApi } from '../../services/profileApi';
@@ -21,6 +23,7 @@ import type {
   Profile,
   ProfilePayload,
 } from '../../types/profile';
+import type { WorkoutAnalytics } from '../../types/workout';
 
 const goalOptions: { value: FitnessGoal; label: string }[] = [
   { value: 'GENERAL_FITNESS', label: 'General fitness' },
@@ -65,6 +68,8 @@ export function ProfileScreen() {
   const logout = useAuthStore(s => s.logout);
   const updatePicture = useAuthStore(s => s.updateProfilePicture);
   const [profile, setProfile] = useState<Profile>();
+  const [analytics, setAnalytics] = useState<WorkoutAnalytics>();
+  const [showWorkoutData, setShowWorkoutData] = useState(false);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -78,12 +83,16 @@ export function ProfileScreen() {
   const [experience, setExperience] = useState<ExperienceLevel>('BEGINNER');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [trainingDays, setTrainingDays] = useState<DayOfWeek[]>([]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(undefined);
     try {
-      const value = await profileApi.get();
+      const [value, analyticsValue] = await Promise.all([
+        profileApi.get(),
+        workoutApi.analytics().catch(() => undefined),
+      ]);
       setProfile(value);
+      setAnalytics(analyticsValue);
       setAge(String(value.age));
       setHeight(String(value.heightCm));
       setWeight(String(value.weightKg));
@@ -98,10 +107,12 @@ export function ProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }
-  useEffect(() => {
-    load();
   }, []);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
   async function upload() {
     setSaving(true);
     try {
@@ -449,10 +460,63 @@ export function ProfileScreen() {
           </View>
         )}
       </Card>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.section, { color: colors.text }]}>
+          Workout data
+        </Text>
+        {analytics ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowWorkoutData(value => !value)}
+            style={[styles.dataToggle, { backgroundColor: colors.primarySoft }]}
+          >
+            <AppIcon name="chart" color={colors.primary} size={14} />
+            <Text style={[styles.dataToggleText, { color: colors.primary }]}>
+              {showWorkoutData ? 'Hide details' : 'View details'}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <Card>
+        {analytics ? (
+          showWorkoutData ? (
+            <DetailedWorkoutAnalytics analytics={analytics} />
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowWorkoutData(true)}
+              style={styles.dataPreview}
+            >
+              <View
+                style={[
+                  styles.dataIcon,
+                  { backgroundColor: colors.primarySoft },
+                ]}
+              >
+                <AppIcon name="fire" color={colors.primary} size={19} />
+              </View>
+              <View style={styles.flex}>
+                <Text style={[styles.dataValue, { color: colors.text }]}>
+                  {Math.round(analytics.weekCalories)} kcal this week
+                </Text>
+                <Text style={[styles.dataCaption, { color: colors.muted }]}>
+                  {analytics.completedWorkouts} workouts {'\u00B7'}{' '}
+                  {analytics.completedExercises} completed exercises
+                </Text>
+              </View>
+              <AppIcon name="chevron" color={colors.muted} size={13} />
+            </Pressable>
+          )
+        ) : (
+          <Text style={[styles.caption, { color: colors.muted }]}>
+            Workout analytics will appear after your first completed exercise.
+          </Text>
+        )}
+      </Card>
       <Text style={[styles.section, { color: colors.text }]}>Appearance</Text>
       <Card>
         <Text style={[styles.caption, { color: colors.muted }]}>
-          Choose how GymPilot looks on this device.
+          Choose how GymBro looks on this device.
         </Text>
         <View style={styles.wrap}>
           {(['system', 'light', 'dark'] as ThemePreference[]).map(value => (
@@ -526,6 +590,31 @@ const styles = StyleSheet.create({
     width: 50,
   },
   section: { fontFamily: fonts.displaySemibold, fontSize: 24, marginTop: 5 },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
+  },
+  dataToggle: {
+    alignItems: 'center',
+    borderRadius: 99,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+  dataToggleText: { fontFamily: fonts.body, fontSize: 11, fontWeight: '900' },
+  dataPreview: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  dataIcon: {
+    alignItems: 'center',
+    borderRadius: 15,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  dataValue: { fontFamily: fonts.displaySemibold, fontSize: 20 },
+  dataCaption: { fontFamily: fonts.body, fontSize: 11, marginTop: 2 },
   editForm: { gap: 22, paddingVertical: 4 },
   row: { flexDirection: 'row', gap: 12 },
   editLabel: {

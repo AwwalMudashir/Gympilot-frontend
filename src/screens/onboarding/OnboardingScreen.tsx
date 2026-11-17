@@ -193,7 +193,7 @@ export function OnboardingScreen() {
       </View>
       <Text style={[styles.title, { color: colors.text }]}>{titles[step]}</Text>
       <Text style={[styles.subtitle, { color: colors.muted }]}>
-        A few focused details help GymPilot build a plan that fits real life.
+        A few focused details help GymBro build a plan that fits real life.
       </Text>
       {step === 0 ? (
         <>

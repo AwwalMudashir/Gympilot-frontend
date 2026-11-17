@@ -1,6 +1,6 @@
-# GymPilot Frontend
+# GymBro Frontend
 
-React Native + TypeScript mobile client for the GymPilot Vision fitness platform. The application is Android-first and uses a native React Native CLI project because camera tracking, secure storage, image selection and notifications depend on native modules.
+React Native + TypeScript mobile client for the GymBro fitness platform. The application is Android-first and uses a native React Native CLI project because camera tracking, secure storage, image selection and notifications depend on native modules.
 
 ## Sprint 1 user journeys
 
@@ -17,7 +17,7 @@ React Native + TypeScript mobile client for the GymPilot Vision fitness platform
 
 ## Design system
 
-GymPilot uses an energetic but calm green-and-neutral palette. Light mode uses white and soft-green surfaces; dark mode uses near-black and deep-green surfaces. Barlow Condensed provides strong workout headings and metrics, while Inter is used for readable controls and body text. Font Awesome Free supplies the icon system.
+GymBro uses an energetic but calm green-and-neutral palette. Light mode uses white and soft-green surfaces; dark mode uses near-black and deep-green surfaces. Barlow Condensed provides strong workout headings and metrics, while Inter is used for readable controls and body text. Font Awesome Free supplies the icon system.
 
 The local font files and their OFL licences are under `assets/fonts`. If fonts are changed, relink them with:
 
@@ -37,13 +37,14 @@ npx react-native-asset
 - Vision Camera for the later live exercise-analysis flow
 - Notifee, Gifted Charts and Linear Gradient for later sprint features
 
-## Local services
+## Hosted services
 
-- Spring Boot API: `http://localhost:8080/api`
-- Python vision service: `http://localhost:8000`
-- Metro: `http://localhost:8081`
+- Spring Boot API: `https://gympilot-backend-zjzy.onrender.com/api`
+- Python vision service: `https://gympilot-cv.onrender.com`
 
-The Android emulator reaches the development computer through `10.0.2.2`. For a physical phone, change `DEVELOPMENT_HOST` in `src/config/environment.ts` to the computer's LAN address.
+Both debug and release builds use the hosted APIs, so API traffic does not
+require USB port reversal. Debug builds still require Metro for the JavaScript
+bundle; release APKs include the bundle and run independently.
 
 ## Run
 
@@ -59,6 +60,15 @@ npm run android
 ```
 
 The backend should run with `EXPOSE_DEVELOPMENT_TOKENS=true` when exercising email verification and password recovery locally. Production must send the tokens through the configured email provider instead of returning them to the app.
+
+## Build a standalone Android APK
+
+```powershell
+npm.cmd run apk:release
+```
+
+Install `android/app/build/outputs/apk/release/app-release.apk` on the phone.
+This release build does not require Metro, ADB reverse or a USB connection.
 
 ## Quality checks
 

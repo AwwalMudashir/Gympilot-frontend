@@ -154,6 +154,15 @@ export function ExerciseCatalogueScreen() {
                   >
                     {item.instructions}
                   </Text>
+                  <View style={styles.calories}>
+                    <AppIcon name="fire" color={colors.primary} size={12} />
+                    <Text
+                      style={[styles.calorieText, { color: colors.primary }]}
+                    >
+                      ~{Math.round(item.estimatedCaloriesPer10Minutes)} kcal per
+                      10 active minutes
+                    </Text>
+                  </View>
                 </Card>
               </Pressable>
             ))
@@ -201,4 +210,11 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 12,
   },
+  calories: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 10,
+  },
+  calorieText: { fontFamily: fonts.body, fontSize: 11, fontWeight: '800' },
 });
