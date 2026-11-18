@@ -3,9 +3,10 @@ import axios from 'axios';
 import type { ApiEnvelope } from '../types/api';
 import type { ExerciseResult } from '../types/workout';
 import type {
-  SquatFrameResult,
-  SquatSession,
-  SquatSummary,
+  VisionExerciseCode,
+  VisionFrameResult,
+  VisionSession,
+  VisionSummary,
   VisionWorkoutResult,
 } from '../types/vision';
 import { apiClient, dataOf, visionClient } from './http';
@@ -16,41 +17,54 @@ type ReactNativeFile = {
   type: string;
 };
 
+function exercisePath(exerciseCode: VisionExerciseCode) {
+  return exerciseCode === 'BICEP_CURL' ? 'curl' : 'squat';
+}
+
 export const visionApi = {
-  async startSquatSession(targetRepetitions: number) {
-    const response = await visionClient.post<SquatSession>(
-      '/api/v1/squat/sessions',
+  async startSession(
+    exerciseCode: VisionExerciseCode,
+    targetRepetitions: number,
+  ) {
+    const response = await visionClient.post<VisionSession>(
+      `/api/v1/${exercisePath(exerciseCode)}/sessions`,
       { target_repetitions: targetRepetitions },
     );
     return response.data;
   },
 
-  async analyseSquatFrame(sessionId: string, filePath: string) {
+  async analyseFrame(
+    exerciseCode: VisionExerciseCode,
+    sessionId: string,
+    filePath: string,
+  ) {
     const form = new FormData();
     const frame: ReactNativeFile = {
       uri: `file://${filePath}`,
-      name: 'squat-frame.jpg',
+      name: `${exercisePath(exerciseCode)}-frame.jpg`,
       type: 'image/jpeg',
     };
     form.append('frame', frame as unknown as Blob);
 
-    const response = await visionClient.post<SquatFrameResult>(
-      `/api/v1/squat/sessions/${sessionId}/frames`,
+    const response = await visionClient.post<VisionFrameResult>(
+      `/api/v1/${exercisePath(exerciseCode)}/sessions/${sessionId}/frames`,
       form,
       { headers: { 'Content-Type': 'multipart/form-data' } },
     );
     return response.data;
   },
 
-  async finishSquatSession(sessionId: string) {
-    const response = await visionClient.post<SquatSummary>(
-      `/api/v1/squat/sessions/${sessionId}/finish`,
+  async finishSession(exerciseCode: VisionExerciseCode, sessionId: string) {
+    const response = await visionClient.post<VisionSummary>(
+      `/api/v1/${exercisePath(exerciseCode)}/sessions/${sessionId}/finish`,
     );
     return response.data;
   },
 
-  async cancelSquatSession(sessionId: string) {
-    await visionClient.delete(`/api/v1/squat/sessions/${sessionId}`);
+  async cancelSession(exerciseCode: VisionExerciseCode, sessionId: string) {
+    await visionClient.delete(
+      `/api/v1/${exercisePath(exerciseCode)}/sessions/${sessionId}`,
+    );
   },
 
   async saveWorkoutResult(result: VisionWorkoutResult) {

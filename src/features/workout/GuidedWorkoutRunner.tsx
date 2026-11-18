@@ -104,8 +104,13 @@ export function GuidedWorkoutRunner({
     state => state.completedSets[visionResultKey],
   );
   const clearVisionSetResult = useVisionWorkoutStore(state => state.clear);
-  const isVisionSquat =
-    exercise.cameraSupported && exercise.exercise.code === 'BODYWEIGHT_SQUAT';
+  const visionExerciseCode =
+    exercise.exercise.code === 'BODYWEIGHT_SQUAT' ||
+    exercise.exercise.code === 'BICEP_CURL'
+      ? exercise.exercise.code
+      : undefined;
+  const isVisionExercise =
+    exercise.cameraSupported && visionExerciseCode !== undefined;
   const requiredSeconds = useMemo(
     () =>
       workoutMinimumSeconds({
@@ -345,9 +350,12 @@ export function GuidedWorkoutRunner({
   }
 
   function openVisionCoach() {
+    if (!visionExerciseCode) return;
+
     navigation.navigate('WorkoutCamera', {
       workoutSessionId: session.id,
       exerciseId: exercise.exercise.id,
+      exerciseCode: visionExerciseCode,
       exerciseName: exercise.exercise.name,
       targetRepetitions: exercise.targetRepetitions,
       setNumber,
@@ -567,14 +575,16 @@ export function GuidedWorkoutRunner({
               {exercise.targetRepetitions} reps
             </Text>
             <Text style={[styles.guidance, { color: colors.muted }]}>
-              {isVisionSquat
-                ? 'Position your full body in view. GymBro will count each complete squat and coach your form.'
+              {isVisionExercise
+                ? exercise.exercise.code === 'BICEP_CURL'
+                  ? 'Keep one full arm and your same-side hip visible. GymBro will count each complete curl and coach your elbow position.'
+                  : 'Position your full body in view. GymBro will count each complete squat and coach your form.'
                 : 'Move with control and keep your breathing steady. Mark the set only after completing the target reps.'}
             </Text>
             <PrimaryButton
-              label={isVisionSquat ? 'Open camera coach' : 'Set complete'}
+              label={isVisionExercise ? 'Open camera coach' : 'Set complete'}
               disabled={savingExit}
-              onPress={isVisionSquat ? openVisionCoach : finishCurrentSet}
+              onPress={isVisionExercise ? openVisionCoach : finishCurrentSet}
             />
           </>
         ) : null}

@@ -31,7 +31,7 @@ import { visionApi, visionErrorMessage } from '../../services/visionApi';
 import { useVisionWorkoutStore } from '../../store/visionWorkoutStore';
 import { useTheme } from '../../theme/ThemeProvider';
 import { fonts } from '../../theme/typography';
-import type { SquatFrameResult, SquatSummary } from '../../types/vision';
+import type { VisionFrameResult, VisionSummary } from '../../types/vision';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'WorkoutCamera'>;
 type CameraState = 'READY' | 'RUNNING' | 'PAUSED' | 'SAVING' | 'COMPLETE';
@@ -43,11 +43,17 @@ const PHASE_LABELS = {
   DESCENDING: 'Descending',
   BOTTOM: 'Bottom',
   ASCENDING: 'Ascending',
+  EXTENDED: 'Extended',
+  CURLING: 'Curling',
+  CONTRACTED: 'Contracted',
+  LOWERING: 'Lowering',
 } as const;
 
 function formFlagLabel(flag: string) {
   if (flag === 'INSUFFICIENT_DEPTH') return 'Try a little more depth';
   if (flag === 'EXCESSIVE_FORWARD_LEAN') return 'Keep your chest lifted';
+  if (flag === 'INCOMPLETE_RANGE') return 'Complete the full curl';
+  if (flag === 'ELBOW_DRIFT') return 'Keep your elbow by your side';
   return flag.replaceAll('_', ' ').toLowerCase();
 }
 
@@ -65,9 +71,9 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
 
   const [cameraState, setCameraState] = useState<CameraState>('READY');
   const [analysisSessionId, setAnalysisSessionId] = useState<string>();
-  const [latestFrame, setLatestFrame] = useState<SquatFrameResult>();
-  const [pendingSummary, setPendingSummary] = useState<SquatSummary>();
-  const [savedSummary, setSavedSummary] = useState<SquatSummary>();
+  const [latestFrame, setLatestFrame] = useState<VisionFrameResult>();
+  const [pendingSummary, setPendingSummary] = useState<VisionSummary>();
+  const [savedSummary, setSavedSummary] = useState<VisionSummary>();
   const [error, setError] = useState<string>();
   const captureInFlight = useRef(false);
   const analysisSessionRef = useRef<string | undefined>(undefined);
@@ -78,6 +84,7 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
   const {
     workoutSessionId,
     exerciseId,
+    exerciseCode,
     exerciseName,
     targetRepetitions,
     setNumber,
@@ -93,10 +100,10 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
       stopCoachVoice().catch(() => undefined);
       const sessionId = analysisSessionRef.current;
       if (sessionId && !analysisFinishedRef.current) {
-        visionApi.cancelSquatSession(sessionId).catch(() => undefined);
+        visionApi.cancelSession(exerciseCode, sessionId).catch(() => undefined);
       }
     },
-    [],
+    [exerciseCode],
   );
 
   const analyseNextFrame = useCallback(async () => {
@@ -108,7 +115,8 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
         { flashMode: 'off', enableShutterSound: false },
         {},
       );
-      const result = await visionApi.analyseSquatFrame(
+      const result = await visionApi.analyseFrame(
+        exerciseCode,
         analysisSessionId,
         photo.filePath,
       );
@@ -137,7 +145,7 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
     } finally {
       captureInFlight.current = false;
     }
-  }, [analysisSessionId, photoOutput, targetRepetitions]);
+  }, [analysisSessionId, exerciseCode, photoOutput, targetRepetitions]);
 
   useEffect(() => {
     if (cameraState !== 'RUNNING' || !analysisSessionId) return;
@@ -166,7 +174,7 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
               analysisFinishedRef.current = true;
               if (analysisSessionId) {
                 await visionApi
-                  .cancelSquatSession(analysisSessionId)
+                  .cancelSession(exerciseCode, analysisSessionId)
                   .catch(() => undefined);
               }
               setAnalysisSessionId(undefined);
@@ -183,7 +191,10 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
     setError(undefined);
 
     try {
-      const session = await visionApi.startSquatSession(targetRepetitions);
+      const session = await visionApi.startSession(
+        exerciseCode,
+        targetRepetitions,
+      );
       analysisFinishedRef.current = false;
       lastSpokenRep.current = 0;
       lastSpokenFlag.current = undefined;
@@ -196,11 +207,15 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
         phase: session.phase,
         form_flags: [],
         feedback:
-          'Step back until your shoulders, hips, knees and ankles are visible.',
+          exerciseCode === 'BICEP_CURL'
+            ? 'Keep one full arm and the same-side hip visible.'
+            : 'Step back until your shoulders, hips, knees and ankles are visible.',
       });
       setCameraState('RUNNING');
       speakCoachCue(
-        `Camera coaching started. Complete ${targetRepetitions} controlled squats.`,
+        `Camera coaching started. Complete ${targetRepetitions} controlled ${
+          exerciseCode === 'BICEP_CURL' ? 'curls' : 'squats'
+        }.`,
       ).catch(() => undefined);
     } catch (caught) {
       setError(visionErrorMessage(caught));
@@ -233,7 +248,10 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
       }
 
       try {
-        summary = await visionApi.finishSquatSession(analysisSessionId);
+        summary = await visionApi.finishSession(
+          exerciseCode,
+          analysisSessionId,
+        );
         analysisFinishedRef.current = true;
         setAnalysisSessionId(undefined);
         setPendingSummary(summary);
@@ -384,7 +402,12 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
 
         {cameraState !== 'COMPLETE' ? (
           <>
-            <View style={styles.positionGuide} />
+            <View
+              style={[
+                styles.positionGuide,
+                exerciseCode === 'BICEP_CURL' ? styles.curlPositionGuide : null,
+              ]}
+            />
             <View style={styles.liveBadge}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>
@@ -410,11 +433,16 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
         </View>
         <View style={[styles.metric, { backgroundColor: colors.surface }]}>
           <Text style={[styles.metricLabel, { color: colors.muted }]}>
-            KNEE ANGLE
+            {exerciseCode === 'BICEP_CURL' ? 'ELBOW ANGLE' : 'KNEE ANGLE'}
           </Text>
           <Text style={[styles.metricValue, { color: colors.text }]}>
-            {latestFrame?.knee_angle
-              ? `${latestFrame.knee_angle.toFixed(0)}°`
+            {(exerciseCode === 'BICEP_CURL'
+              ? latestFrame?.elbow_angle
+              : latestFrame?.knee_angle) != null
+              ? `${(exerciseCode === 'BICEP_CURL'
+                  ? latestFrame?.elbow_angle
+                  : latestFrame?.knee_angle
+                )?.toFixed(0)}°`
               : '—'}
           </Text>
         </View>
@@ -434,7 +462,9 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
         <AppIcon name="info" color={colors.primary} size={18} />
         <Text style={[styles.feedbackText, { color: colors.text }]}>
           {latestFrame?.feedback ??
-            'Place your full body inside the guide, then start.'}
+            (exerciseCode === 'BICEP_CURL'
+              ? 'Place your working arm inside the guide, then start.'
+              : 'Place your full body inside the guide, then start.')}
         </Text>
       </View>
 
@@ -525,6 +555,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: '25%',
     top: 38,
+  },
+  curlPositionGuide: {
+    borderRadius: 70,
+    bottom: 70,
+    left: '17%',
+    right: '17%',
+    top: 70,
   },
   liveBadge: {
     alignItems: 'center',

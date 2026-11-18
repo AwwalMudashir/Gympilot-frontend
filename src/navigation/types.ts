@@ -24,6 +24,7 @@ export type MainStackParamList = {
   WorkoutCamera: {
     workoutSessionId: string;
     exerciseId: string;
+    exerciseCode: import('../types/vision').VisionExerciseCode;
     exerciseName: string;
     targetRepetitions: number;
     setNumber: number;
