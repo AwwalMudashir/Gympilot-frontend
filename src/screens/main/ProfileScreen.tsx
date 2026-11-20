@@ -5,6 +5,7 @@ import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
 import { ChoiceChip } from '../../components/ChoiceChip';
 import { FormField } from '../../components/FormField';
+import { NotificationPreferencesCard } from '../../components/NotificationPreferencesCard';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
@@ -78,6 +79,10 @@ export function ProfileScreen() {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [duration, setDuration] = useState('');
+  const [waterTarget, setWaterTarget] = useState('2000');
+  const [preferredBedtime, setPreferredBedtime] = useState('22:30');
+  const [preferredWakeTime, setPreferredWakeTime] = useState('06:30');
+  const [sleepTarget, setSleepTarget] = useState('480');
   const [location, setLocation] = useState('');
   const [goal, setGoal] = useState<FitnessGoal>('GENERAL_FITNESS');
   const [experience, setExperience] = useState<ExperienceLevel>('BEGINNER');
@@ -97,6 +102,10 @@ export function ProfileScreen() {
       setHeight(String(value.heightCm));
       setWeight(String(value.weightKg));
       setDuration(String(value.workoutDurationMinutes));
+      setWaterTarget(String(value.dailyWaterTargetMl ?? 2000));
+      setPreferredBedtime(value.preferredBedtime ?? '22:30');
+      setPreferredWakeTime(value.preferredWakeTime ?? '06:30');
+      setSleepTarget(String(value.sleepTargetMinutes ?? 480));
       setLocation(value.preferredWorkoutLocation);
       setGoal(value.fitnessGoal);
       setExperience(value.experienceLevel);
@@ -188,6 +197,9 @@ export function ProfileScreen() {
     const heightValue = Number(height);
     const weightValue = Number(weight);
     const durationValue = Number(duration);
+    const waterTargetValue = Number(waterTarget);
+    const sleepTargetValue = Number(sleepTarget);
+    const validTime = /^([01]\d|2[0-3]):[0-5]\d$/;
     if (
       ageValue < 13 ||
       ageValue > 120 ||
@@ -197,11 +209,17 @@ export function ProfileScreen() {
       weightValue > 400 ||
       durationValue < 10 ||
       durationValue > 300 ||
+      waterTargetValue < 250 ||
+      waterTargetValue > 10000 ||
+      sleepTargetValue < 180 ||
+      sleepTargetValue > 900 ||
+      !validTime.test(preferredBedtime) ||
+      !validTime.test(preferredWakeTime) ||
       !location.trim() ||
       trainingDays.length === 0
     ) {
       setError(
-        'Check your measurements, location, training days and session duration.',
+        'Check your measurements, schedule, recovery targets and 24-hour sleep times.',
       );
       return;
     }
@@ -219,10 +237,10 @@ export function ProfileScreen() {
         availableEquipment: equipment,
         preferredWorkoutDays: trainingDays,
         daysPerWeek: trainingDays.length,
-        dailyWaterTargetMl: profile.dailyWaterTargetMl,
-        preferredBedtime: profile.preferredBedtime,
-        preferredWakeTime: profile.preferredWakeTime,
-        sleepTargetMinutes: profile.sleepTargetMinutes,
+        dailyWaterTargetMl: waterTargetValue,
+        preferredBedtime,
+        preferredWakeTime,
+        sleepTargetMinutes: sleepTargetValue,
         waistCm: profile.waistCm,
         chestCm: profile.chestCm,
         armCm: profile.armCm,
@@ -240,6 +258,7 @@ export function ProfileScreen() {
       setSaving(false);
     }
   }
+
   if (loading)
     return (
       <Screen>
@@ -439,6 +458,42 @@ export function ProfileScreen() {
               value={duration}
               onChangeText={setDuration}
             />
+            <Text style={[styles.editLabel, { color: colors.text }]}>
+              Recovery targets
+            </Text>
+            <Text style={[styles.recoveryHint, { color: colors.muted }]}>
+              These settings drive your hydration progress and sleep check-ins.
+            </Text>
+            <FormField
+              label="Daily water target (ml)"
+              keyboardType="number-pad"
+              value={waterTarget}
+              onChangeText={setWaterTarget}
+            />
+            <View style={styles.row}>
+              <View style={styles.flex}>
+                <FormField
+                  label="Bedtime (24h)"
+                  placeholder="22:30"
+                  value={preferredBedtime}
+                  onChangeText={setPreferredBedtime}
+                />
+              </View>
+              <View style={styles.flex}>
+                <FormField
+                  label="Wake time (24h)"
+                  placeholder="06:30"
+                  value={preferredWakeTime}
+                  onChangeText={setPreferredWakeTime}
+                />
+              </View>
+            </View>
+            <FormField
+              label="Sleep target (minutes)"
+              keyboardType="number-pad"
+              value={sleepTarget}
+              onChangeText={setSleepTarget}
+            />
             <PrimaryButton
               label="Save changes"
               loading={saving}
@@ -457,9 +512,20 @@ export function ProfileScreen() {
               value={`${profile.daysPerWeek} days · ${profile.workoutDurationMinutes} min`}
             />
             <Metric label="Location" value={profile.preferredWorkoutLocation} />
+            <Metric
+              label="Water target"
+              value={`${profile.dailyWaterTargetMl ?? 2000} ml`}
+            />
+            <Metric
+              label="Sleep target"
+              value={`${Math.round(
+                (profile.sleepTargetMinutes ?? 480) / 60,
+              )} hours`}
+            />
           </View>
         )}
       </Card>
+      <NotificationPreferencesCard />
       <View style={styles.sectionHeader}>
         <Text style={[styles.section, { color: colors.text }]}>
           Workout data
@@ -548,6 +614,7 @@ function Metric({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
@@ -630,6 +697,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.1,
     textTransform: 'uppercase',
+  },
+  recoveryHint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: -10,
   },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   metric: { width: '45%' },

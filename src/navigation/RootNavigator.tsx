@@ -14,6 +14,7 @@ import { DashboardScreen } from '../screens/main/DashboardScreen';
 import { ExerciseCatalogueScreen } from '../screens/main/ExerciseCatalogueScreen';
 import { ExerciseDetailScreen } from '../screens/main/ExerciseDetailScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
+import { WellnessScreen } from '../screens/main/WellnessScreen';
 import { WorkoutHistoryScreen } from '../screens/main/WorkoutHistoryScreen';
 import { WorkoutCameraScreen } from '../screens/main/WorkoutCameraScreen';
 import { WeeklyPlanScreen } from '../screens/main/WeeklyPlanScreen';
@@ -169,6 +170,11 @@ function SignedInNavigator() {
         component={WorkoutCameraScreen}
         name="WorkoutCamera"
         options={{ headerShown: false }}
+      />
+      <MainStack.Screen
+        component={WellnessScreen}
+        name="Wellness"
+        options={{ title: 'Wellness & recovery' }}
       />
     </MainStack.Navigator>
   );
