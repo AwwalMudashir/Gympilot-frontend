@@ -1,8 +1,9 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { apiErrorMessage } from '../services/http';
+import { localNotificationService } from '../services/localNotificationService';
 import { notificationApi } from '../services/notificationApi';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/typography';
@@ -88,8 +89,34 @@ export function NotificationPreferencesCard() {
         sleepCheckinTime: preferences.sleepCheckinTime,
       });
       setPreferences(updated);
-      setNotice({ tone: 'success', message: 'Reminder preferences saved.' });
-      Alert.alert('Reminders saved', 'Your reminder preferences are updated.');
+      try {
+        const scheduled = await localNotificationService.sync(updated);
+        if (!scheduled.permissionGranted) {
+          setNotice({
+            tone: 'error',
+            message:
+              'Preferences saved, but phone notifications are blocked. Allow GymBro notifications in your device settings.',
+          });
+        } else if (scheduled.scheduledCount === 0) {
+          setNotice({
+            tone: 'success',
+            message: 'Preferences saved. Local reminders are switched off.',
+          });
+        } else {
+          setNotice({
+            tone: 'success',
+            message: `${scheduled.scheduledCount} local reminder${
+              scheduled.scheduledCount === 1 ? '' : 's'
+            } scheduled on this phone.`,
+          });
+        }
+      } catch {
+        setNotice({
+          tone: 'error',
+          message:
+            'Preferences were saved, but this phone could not schedule the reminders. Check notification permissions and try again.',
+        });
+      }
     } catch (caught) {
       setNotice({ tone: 'error', message: apiErrorMessage(caught) });
     } finally {

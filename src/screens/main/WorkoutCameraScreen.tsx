@@ -79,7 +79,9 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
   const analysisSessionRef = useRef<string | undefined>(undefined);
   const analysisFinishedRef = useRef(false);
   const lastSpokenRep = useRef(0);
-  const lastSpokenFlag = useRef<string | undefined>(undefined);
+  const spokenFlags = useRef(new Set<string>());
+  const lastSpokenGuidance = useRef<string | undefined>(undefined);
+  const calibrationSpoken = useRef(false);
 
   const {
     workoutSessionId,
@@ -123,19 +125,35 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
       setLatestFrame(result);
       setError(undefined);
 
+      const calibrated = result.calibrated ?? result.pose_detected;
+      if (result.pose_detected && calibrated) {
+        lastSpokenGuidance.current = undefined;
+      }
+
       if (result.repetitions >= targetRepetitions) {
         setCameraState('PAUSED');
       }
 
-      if (result.repetitions > lastSpokenRep.current) {
+      if (!result.pose_detected || !calibrated) {
+        if (lastSpokenGuidance.current !== result.feedback) {
+          lastSpokenGuidance.current = result.feedback;
+          speakCoachCue(result.feedback).catch(() => undefined);
+        }
+      } else if (!calibrationSpoken.current) {
+        calibrationSpoken.current = true;
+        lastSpokenGuidance.current = undefined;
+        speakCoachCue('Position locked. Begin when you are ready.').catch(
+          () => undefined,
+        );
+      } else if (result.repetitions > lastSpokenRep.current) {
         lastSpokenRep.current = result.repetitions;
         speakCoachCue(String(result.repetitions)).catch(() => undefined);
       } else {
         const newFlag = result.form_flags.find(
-          flag => flag !== lastSpokenFlag.current,
+          flag => !spokenFlags.current.has(flag),
         );
         if (newFlag) {
-          lastSpokenFlag.current = newFlag;
+          spokenFlags.current.add(newFlag);
           speakCoachCue(result.feedback).catch(() => undefined);
         }
       }
@@ -197,7 +215,9 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
       );
       analysisFinishedRef.current = false;
       lastSpokenRep.current = 0;
-      lastSpokenFlag.current = undefined;
+      spokenFlags.current.clear();
+      lastSpokenGuidance.current = undefined;
+      calibrationSpoken.current = false;
       setAnalysisSessionId(session.session_id);
       setLatestFrame({
         session_id: session.session_id,
@@ -205,6 +225,7 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
         repetitions: 0,
         target_repetitions: targetRepetitions,
         phase: session.phase,
+        calibrated: session.calibrated ?? false,
         form_flags: [],
         feedback:
           exerciseCode === 'BICEP_CURL'
@@ -350,6 +371,8 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
   const repetitions =
     savedSummary?.repetitions ?? latestFrame?.repetitions ?? 0;
   const phase = latestFrame?.phase ?? 'STANDING';
+  const calibrated =
+    latestFrame?.calibrated ?? latestFrame?.pose_detected ?? false;
   const formFlags = savedSummary?.form_flags ?? latestFrame?.form_flags ?? [];
 
   return (
@@ -411,7 +434,11 @@ export function WorkoutCameraScreen({ navigation, route }: Props) {
             <View style={styles.liveBadge}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>
-                {cameraState === 'RUNNING' ? 'LIVE' : 'READY'}
+                {cameraState === 'RUNNING'
+                  ? calibrated
+                    ? 'LIVE'
+                    : 'ALIGN'
+                  : 'READY'}
               </Text>
             </View>
             <View style={styles.repOverlay}>

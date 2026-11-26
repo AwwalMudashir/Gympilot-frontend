@@ -4,12 +4,14 @@ import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
+import { CoachDashboardCard } from '../../components/CoachDashboardCard';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
 import { StatusNotice } from '../../components/StatusNotice';
 import { DashboardCalorieCard } from '../../components/WorkoutAnalyticsView';
 import type { MainStackParamList } from '../../navigation/types';
+import { coachApi } from '../../services/coachApi';
 import { apiErrorCode, apiErrorMessage } from '../../services/http';
 import { profileApi } from '../../services/profileApi';
 import { workoutApi } from '../../services/workoutApi';
@@ -17,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../theme/ThemeProvider';
 import { fonts } from '../../theme/typography';
 import type { Profile } from '../../types/profile';
+import type { CoachBrief } from '../../types/coach';
 import type {
   TodayWorkout,
   WorkoutAnalytics,
@@ -33,6 +36,7 @@ export function DashboardScreen() {
   const [plan, setPlan] = useState<WorkoutPlan>();
   const [profile, setProfile] = useState<Profile>();
   const [analytics, setAnalytics] = useState<WorkoutAnalytics>();
+  const [coachBrief, setCoachBrief] = useState<CoachBrief>();
   const [planState, setPlanState] = useState<'unknown' | 'missing' | 'ready'>(
     'unknown',
   );
@@ -43,13 +47,19 @@ export function DashboardScreen() {
     setLoading(true);
     setError(undefined);
 
-    const [profileResult, planResult, todayResult, analyticsResult] =
-      await Promise.allSettled([
-        profileApi.get(),
-        workoutApi.currentPlan(),
-        workoutApi.today(),
-        workoutApi.analytics(),
-      ]);
+    const [
+      profileResult,
+      planResult,
+      todayResult,
+      analyticsResult,
+      coachResult,
+    ] = await Promise.allSettled([
+      profileApi.get(),
+      workoutApi.currentPlan(),
+      workoutApi.today(),
+      workoutApi.analytics(),
+      coachApi.daily(),
+    ]);
 
     const syncErrors: string[] = [];
 
@@ -94,6 +104,10 @@ export function DashboardScreen() {
 
     if (analyticsResult.status === 'fulfilled') {
       setAnalytics(analyticsResult.value);
+    }
+
+    if (coachResult.status === 'fulfilled') {
+      setCoachBrief(coachResult.value);
     }
 
     setError(syncErrors[0]);
@@ -277,6 +291,13 @@ export function DashboardScreen() {
               }
             />
           ) : null}
+          <Text style={[styles.section, { color: colors.text }]}>
+            Your coach
+          </Text>
+          <CoachDashboardCard
+            brief={coachBrief}
+            onPress={() => navigation.navigate('Coach')}
+          />
           {analytics ? (
             <>
               <Text style={[styles.section, { color: colors.text }]}>

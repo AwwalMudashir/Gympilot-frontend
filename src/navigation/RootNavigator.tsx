@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '../components/AppIcon';
+import { PrimaryButton } from '../components/PrimaryButton';
 import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
@@ -11,6 +12,7 @@ import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen';
 import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen';
 import { DashboardScreen } from '../screens/main/DashboardScreen';
+import { CoachScreen } from '../screens/main/CoachScreen';
 import { ExerciseCatalogueScreen } from '../screens/main/ExerciseCatalogueScreen';
 import { ExerciseDetailScreen } from '../screens/main/ExerciseDetailScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
@@ -62,6 +64,45 @@ function SplashBrand() {
         source={require('../assets/branding/gymbro-wordmark.png')}
         style={styles.wordmark}
       />
+    </View>
+  );
+}
+
+function StartupRecovery() {
+  const { colors } = useTheme();
+  const initialize = useAuthStore(state => state.initialize);
+  const continueSignedOut = useAuthStore(state => state.continueSignedOut);
+  const message = useAuthStore(state => state.startupMessage);
+
+  return (
+    <View style={[styles.recovery, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.recoveryIcon,
+          { backgroundColor: colors.primarySoft },
+        ]}
+      >
+        <AppIcon color={colors.primary} name="retry" size={28} />
+      </View>
+
+      <Text style={[styles.recoveryTitle, { color: colors.text }]}>
+        Taking longer than expected
+      </Text>
+      <Text style={[styles.recoveryMessage, { color: colors.muted }]}>
+        {message} Check your internet connection, wait a moment, then retry.
+      </Text>
+
+      <View style={styles.recoveryActions}>
+        <PrimaryButton
+          label="Try again"
+          onPress={() => initialize().catch(() => undefined)}
+        />
+        <PrimaryButton
+          label="Sign in again"
+          onPress={() => continueSignedOut().catch(() => undefined)}
+          variant="secondary"
+        />
+      </View>
     </View>
   );
 }
@@ -157,6 +198,11 @@ function SignedInNavigator() {
         options={{ title: 'Administration' }}
       />
       <MainStack.Screen
+        component={CoachScreen}
+        name="Coach"
+        options={{ title: 'GymBro Coach' }}
+      />
+      <MainStack.Screen
         component={WorkoutDetailScreen}
         name="WorkoutDetail"
         options={{ title: 'Workout details' }}
@@ -206,6 +252,9 @@ export function RootNavigator() {
         />
       </View>
     );
+  }
+  if (status === 'startupError') {
+    return <StartupRecovery />;
   }
   if (status === 'signedOut') {
     return <AuthNavigator />;
@@ -259,4 +308,34 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   splashLoader: { marginTop: 29, transform: [{ scale: 0.82 }] },
+  recovery: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  recoveryIcon: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderRadius: 36,
+    height: 72,
+    justifyContent: 'center',
+    marginBottom: 22,
+    width: 72,
+  },
+  recoveryTitle: {
+    fontFamily: fonts.displaySemibold,
+    fontSize: 25,
+    textAlign: 'center',
+  },
+  recoveryMessage: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  recoveryActions: {
+    gap: 12,
+    marginTop: 30,
+  },
 });

@@ -10,11 +10,13 @@ import type {
   UserSession,
 } from '../types/auth';
 
-type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
+type AuthStatus = 'loading' | 'startupError' | 'signedOut' | 'signedIn';
 type AuthState = {
   status: AuthStatus;
+  startupMessage: string | null;
   user: UserSession | null;
   initialize: () => Promise<void>;
+  continueSignedOut: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<RegistrationResponse>;
   refreshUser: () => Promise<void>;
@@ -22,6 +24,19 @@ type AuthState = {
   updateProfilePicture: (url?: string) => void;
   logout: () => Promise<void>;
 };
+
+const STARTUP_REQUEST_TIMEOUT_MS = 20_000;
+
+function withStartupTimeout<T>(promise: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('STARTUP_REQUEST_TIMEOUT')),
+      STARTUP_REQUEST_TIMEOUT_MS,
+    );
+
+    promise.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
 
 async function persistSession(response: AuthResponse) {
   await tokenVault.write({
@@ -32,24 +47,45 @@ async function persistSession(response: AuthResponse) {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'loading',
+  startupMessage: null,
   user: null,
   async initialize() {
+    set({ status: 'loading', startupMessage: null });
     try {
       const tokens = await tokenVault.read();
       if (!tokens) {
-        set({ status: 'signedOut', user: null });
+        set({ status: 'signedOut', startupMessage: null, user: null });
         return;
       }
-      set({ status: 'signedIn', user: await authApi.currentUser() });
+
+      const user = await withStartupTimeout(authApi.currentUser());
+      set({ status: 'signedIn', startupMessage: null, user });
     } catch {
+      if (!tokenVault.getRefreshToken()) {
+        await tokenVault.clear().catch(() => undefined);
+        set({ status: 'signedOut', startupMessage: null, user: null });
+        return;
+      }
+
+      set({
+        status: 'startupError',
+        startupMessage:
+          'GymBro could not reach the server. It may still be waking up.',
+        user: null,
+      });
+    }
+  },
+  async continueSignedOut() {
+    try {
       await tokenVault.clear();
-      set({ status: 'signedOut', user: null });
+    } finally {
+      set({ status: 'signedOut', startupMessage: null, user: null });
     }
   },
   async login(email, password) {
     const response = await authApi.login(email, password);
     await persistSession(response);
-    set({ status: 'signedIn', user: response.user });
+    set({ status: 'signedIn', startupMessage: null, user: response.user });
   },
   async register(payload) {
     return authApi.register(payload);
@@ -73,11 +109,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (refreshToken) await authApi.logout(refreshToken);
     } finally {
       await tokenVault.clear();
-      set({ status: 'signedOut', user: null });
+      set({ status: 'signedOut', startupMessage: null, user: null });
     }
   },
 }));
 
 setSessionExpiredHandler(() => {
-  useAuthStore.setState({ status: 'signedOut', user: null });
+  useAuthStore.setState({
+    status: 'signedOut',
+    startupMessage: null,
+    user: null,
+  });
 });

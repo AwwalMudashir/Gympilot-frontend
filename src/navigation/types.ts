@@ -19,6 +19,7 @@ export type MainTabParamList = {
 export type MainStackParamList = {
   Tabs: undefined;
   AdminDashboard: undefined;
+  Coach: undefined;
   Wellness: undefined;
   WorkoutDetail: { day?: import('../types/profile').DayOfWeek } | undefined;
   ExerciseDetail: { exercise: import('../types/workout').Exercise };

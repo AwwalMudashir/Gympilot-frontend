@@ -9,6 +9,7 @@ export type VisionSession = {
   target_repetitions: number;
   repetitions: number;
   phase: VisionPhase;
+  calibrated?: boolean;
 };
 
 export type VisionFrameResult = {
@@ -17,6 +18,7 @@ export type VisionFrameResult = {
   repetitions: number;
   target_repetitions: number;
   phase: VisionPhase;
+  calibrated?: boolean;
   knee_angle?: number;
   hip_angle?: number;
   forward_lean_angle?: number;

@@ -5,15 +5,19 @@ import { fonts } from '../theme/typography';
 export function ChoiceChip({
   label,
   selected,
+  disabled = false,
   onPress,
 }: {
   label: string;
   selected: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
   return (
     <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
       onPress={onPress}
       style={[
         styles.chip,
@@ -21,6 +25,7 @@ export function ChoiceChip({
           backgroundColor: selected ? colors.primarySoft : colors.surface,
           borderColor: selected ? colors.primary : colors.border,
         },
+        disabled ? styles.disabled : null,
       ]}
     >
       <Text
@@ -41,5 +46,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
+  disabled: { opacity: 0.55 },
   label: { fontFamily: fonts.body, fontSize: 14, fontWeight: '700' },
 });

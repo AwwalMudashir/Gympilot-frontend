@@ -35,6 +35,7 @@ async function refreshAccessToken() {
   const response = await axios.post<ApiEnvelope<AuthResponse>>(
     `${environment.apiBaseUrl}/auth/refresh`,
     { refreshToken },
+    { timeout: 30_000 },
   );
   const refreshed = response.data.data;
   await tokenVault.write({
