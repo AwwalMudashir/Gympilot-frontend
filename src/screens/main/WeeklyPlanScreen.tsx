@@ -25,19 +25,26 @@ export function WeeklyPlanScreen() {
     'unknown',
   );
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string>();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(undefined);
     try {
-      const currentPlan = await workoutApi.currentPlan();
+      const currentPlan = await workoutApi.ensureCurrentPlan();
       setPlan(currentPlan);
       setPlanState('ready');
     } catch (caught) {
       if (apiErrorCode(caught) === 'RESOURCE_NOT_FOUND') {
         setPlan(undefined);
         setPlanState('missing');
+        setError(
+          apiErrorMessage(
+            caught,
+            'We could not prepare your workout plan from the saved profile.',
+          ),
+        );
       } else {
         setError(apiErrorMessage(caught));
       }
@@ -47,7 +54,9 @@ export function WeeklyPlanScreen() {
   }, []);
 
   async function generate() {
-    setLoading(true);
+    if (generating) return;
+
+    setGenerating(true);
     setError(undefined);
     try {
       const generatedPlan = await workoutApi.generatePlan();
@@ -56,12 +65,14 @@ export function WeeklyPlanScreen() {
     } catch (caught) {
       setError(apiErrorMessage(caught));
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   }
 
   async function regenerate() {
-    setLoading(true);
+    if (generating) return;
+
+    setGenerating(true);
     setError(undefined);
     try {
       const regeneratedPlan = await workoutApi.regeneratePlan();
@@ -70,7 +81,7 @@ export function WeeklyPlanScreen() {
     } catch (caught) {
       setError(apiErrorMessage(caught));
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   }
 
@@ -105,9 +116,13 @@ export function WeeklyPlanScreen() {
         />
       ) : planState === 'missing' ? (
         <StateView
-          title="Your plan is ready to be built"
-          message="Generate a personalised week from your fitness profile."
-          actionLabel="Generate my plan"
+          title="Your weekly plan needs attention"
+          message={
+            error ??
+            'GymBro normally prepares your weekly plan automatically. Try again to recover it.'
+          }
+          actionLabel="Try again"
+          actionLoading={generating}
           onAction={generate}
         />
       ) : !plan ? (
@@ -181,6 +196,7 @@ export function WeeklyPlanScreen() {
           </View>
           <PrimaryButton
             label="Regenerate plan"
+            loading={generating}
             variant="secondary"
             onPress={confirmRegenerate}
           />

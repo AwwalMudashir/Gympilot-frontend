@@ -91,13 +91,11 @@ export function ProfileScreen() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(undefined);
+
     try {
-      const [value, analyticsValue] = await Promise.all([
-        profileApi.get(),
-        workoutApi.analytics().catch(() => undefined),
-      ]);
+      const value = await profileApi.get();
+
       setProfile(value);
-      setAnalytics(analyticsValue);
       setAge(String(value.age));
       setHeight(String(value.heightCm));
       setWeight(String(value.weightKg));
@@ -111,6 +109,12 @@ export function ProfileScreen() {
       setExperience(value.experienceLevel);
       setEquipment(value.availableEquipment);
       setTrainingDays(value.preferredWorkoutDays);
+
+      // Analytics is useful but must not hold the entire profile screen hostage.
+      workoutApi
+        .analytics()
+        .then(setAnalytics)
+        .catch(() => undefined);
     } catch (caught) {
       setError(apiErrorMessage(caught));
     } finally {
@@ -259,7 +263,7 @@ export function ProfileScreen() {
     }
   }
 
-  if (loading)
+  if (loading && !profile)
     return (
       <Screen>
         <StateView

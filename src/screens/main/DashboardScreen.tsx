@@ -41,24 +41,16 @@ export function DashboardScreen() {
     'unknown',
   );
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string>();
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(undefined);
 
-    const [
-      profileResult,
-      planResult,
-      todayResult,
-      analyticsResult,
-      coachResult,
-    ] = await Promise.allSettled([
+    const [profileResult, planResult] = await Promise.allSettled([
       profileApi.get(),
-      workoutApi.currentPlan(),
-      workoutApi.today(),
-      workoutApi.analytics(),
-      coachApi.daily(),
+      workoutApi.ensureCurrentPlan(),
     ]);
 
     const syncErrors: string[] = [];
@@ -75,6 +67,12 @@ export function DashboardScreen() {
     } else if (apiErrorCode(planResult.reason) === 'RESOURCE_NOT_FOUND') {
       setPlan(undefined);
       setPlanState('missing');
+      syncErrors.push(
+        apiErrorMessage(
+          planResult.reason,
+          'Your weekly workout plan could not be prepared.',
+        ),
+      );
     } else {
       syncErrors.push(
         apiErrorMessage(
@@ -84,48 +82,61 @@ export function DashboardScreen() {
       );
     }
 
-    if (todayResult.status === 'fulfilled') {
-      setToday(todayResult.value);
-    } else if (apiErrorCode(todayResult.reason) === 'RESOURCE_NOT_FOUND') {
-      if (
-        planResult.status === 'rejected' &&
-        apiErrorCode(planResult.reason) === 'RESOURCE_NOT_FOUND'
-      ) {
-        setToday(undefined);
+    if (planResult.status === 'fulfilled') {
+      try {
+        setToday(await workoutApi.today());
+      } catch (caught) {
+        syncErrors.push(
+          apiErrorMessage(
+            caught,
+            "Today's workout could not be refreshed.",
+          ),
+        );
       }
     } else {
-      syncErrors.push(
-        apiErrorMessage(
-          todayResult.reason,
-          "Today's workout could not be refreshed.",
-        ),
-      );
-    }
-
-    if (analyticsResult.status === 'fulfilled') {
-      setAnalytics(analyticsResult.value);
-    }
-
-    if (coachResult.status === 'fulfilled') {
-      setCoachBrief(coachResult.value);
+      setToday(undefined);
     }
 
     setError(syncErrors[0]);
     setLoading(false);
+
+    // These cards are secondary. Load them after the dashboard becomes usable
+    // so a slow analytics or coach query cannot block the plan and profile.
+    Promise.allSettled([workoutApi.analytics(), coachApi.daily()])
+      .then(([analyticsResult, coachResult]) => {
+        if (analyticsResult.status === 'fulfilled') {
+          setAnalytics(analyticsResult.value);
+        }
+
+        if (coachResult.status === 'fulfilled') {
+          setCoachBrief(coachResult.value);
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   async function generate() {
-    setLoading(true);
+    if (generating) return;
+
+    setGenerating(true);
     setError(undefined);
 
     try {
       const generatedPlan = await workoutApi.generatePlan();
       setPlan(generatedPlan);
       setPlanState('ready');
-      await load();
+
+      const todayResult = await workoutApi.today();
+      setToday(todayResult);
+
+      workoutApi
+        .analytics()
+        .then(setAnalytics)
+        .catch(() => undefined);
     } catch (caught) {
       setError(apiErrorMessage(caught));
-      setLoading(false);
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -193,9 +204,13 @@ export function DashboardScreen() {
           {planState === 'missing' ? (
             <Card>
               <StateView
-                title="Build your first week"
-                message="Your profile is ready. Generate a balanced plan in one tap."
-                actionLabel="Generate my plan"
+                title="Your weekly plan needs attention"
+                message={
+                  error ??
+                  'GymBro normally prepares your weekly plan automatically. Try again to recover it.'
+                }
+                actionLabel="Try again"
+                actionLoading={generating}
                 onAction={generate}
               />
             </Card>
@@ -375,6 +390,7 @@ export function DashboardScreen() {
           ) : null}
           <PrimaryButton
             label="Refresh dashboard"
+            loading={loading}
             variant="secondary"
             onPress={load}
           />

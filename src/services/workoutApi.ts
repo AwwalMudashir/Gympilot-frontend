@@ -10,7 +10,7 @@ import type {
   WorkoutSession,
   WorkoutAnalytics,
 } from '../types/workout';
-import { apiClient, dataOf } from './http';
+import { apiClient, apiErrorCode, dataOf } from './http';
 export const workoutApi = {
   async exercises() {
     return dataOf(await apiClient.get<ApiEnvelope<Exercise[]>>('/exercises'));
@@ -26,6 +26,23 @@ export const workoutApi = {
         '/workouts/plans/generate',
       ),
     );
+  },
+  async ensureCurrentPlan() {
+    try {
+      return dataOf(
+        await apiClient.get<ApiEnvelope<WorkoutPlan>>(
+          '/workouts/plans/current',
+        ),
+      );
+    } catch (error) {
+      if (apiErrorCode(error) !== 'RESOURCE_NOT_FOUND') throw error;
+
+      return dataOf(
+        await apiClient.post<ApiEnvelope<WorkoutPlan>>(
+          '/workouts/plans/generate',
+        ),
+      );
+    }
   },
   async regeneratePlan() {
     return dataOf(

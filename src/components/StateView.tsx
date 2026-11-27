@@ -10,12 +10,14 @@ export function StateView({
   icon = 'dumbbell',
   actionLabel,
   onAction,
+  actionLoading = false,
 }: {
   title: string;
   message: string;
   icon?: AppIconName;
   actionLabel?: string;
   onAction?: () => void;
+  actionLoading?: boolean;
 }) {
   const { colors } = useTheme();
   return (
@@ -26,7 +28,11 @@ export function StateView({
       <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       <Text style={[styles.message, { color: colors.muted }]}>{message}</Text>
       {actionLabel && onAction ? (
-        <PrimaryButton label={actionLabel} onPress={onAction} />
+        <PrimaryButton
+          label={actionLabel}
+          loading={actionLoading}
+          onPress={onAction}
+        />
       ) : null}
     </View>
   );

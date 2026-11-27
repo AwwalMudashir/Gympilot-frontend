@@ -8,12 +8,12 @@ import { tokenVault } from './tokenVault';
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 export const apiClient = axios.create({
   baseURL: environment.apiBaseUrl,
-  // Render Free services can need about a minute to wake from an idle state.
-  timeout: 120_000,
+  // Allow one Render cold start, but never leave the app spinning for minutes.
+  timeout: 75_000,
 });
 export const visionClient = axios.create({
   baseURL: environment.visionBaseUrl,
-  timeout: 120_000,
+  timeout: 75_000,
 });
 
 apiClient.interceptors.request.use(config => {
