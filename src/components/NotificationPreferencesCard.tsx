@@ -1,6 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
+import type { PropsWithChildren } from 'react';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { apiErrorMessage } from '../services/http';
 import { localNotificationService } from '../services/localNotificationService';
@@ -8,8 +9,8 @@ import { notificationApi } from '../services/notificationApi';
 import { useTheme } from '../theme/ThemeProvider';
 import { fonts } from '../theme/typography';
 import type { NotificationPreferences } from '../types/notification';
+import { AppIcon, type AppIconName } from './AppIcon';
 import { Card } from './Card';
-import { ChoiceChip } from './ChoiceChip';
 import { FormField } from './FormField';
 import { PrimaryButton } from './PrimaryButton';
 import { StatusNotice } from './StatusNotice';
@@ -55,17 +56,19 @@ export function NotificationPreferencesCard() {
 
   async function save() {
     const validTime = /^([01]\d|2[0-3]):[0-5]\d$/;
-    if (
-      (preferences.workoutEnabled &&
+    const invalidEnabledReminder =
+      preferences.allNotificationsEnabled &&
+      ((preferences.workoutEnabled &&
         !validTime.test(preferences.workoutTime)) ||
-      (preferences.bedtimeEnabled &&
-        !validTime.test(preferences.bedtimeReminderTime)) ||
-      (preferences.sleepCheckinEnabled &&
-        !validTime.test(preferences.sleepCheckinTime)) ||
-      (preferences.hydrationEnabled &&
-        (preferences.hydrationIntervalMinutes < 30 ||
-          preferences.hydrationIntervalMinutes > 480))
-    ) {
+        (preferences.bedtimeEnabled &&
+          !validTime.test(preferences.bedtimeReminderTime)) ||
+        (preferences.sleepCheckinEnabled &&
+          !validTime.test(preferences.sleepCheckinTime)) ||
+        (preferences.hydrationEnabled &&
+          (preferences.hydrationIntervalMinutes < 30 ||
+            preferences.hydrationIntervalMinutes > 480)));
+
+    if (invalidEnabledReminder) {
       setNotice({
         tone: 'error',
         message:
@@ -89,6 +92,7 @@ export function NotificationPreferencesCard() {
         sleepCheckinTime: preferences.sleepCheckinTime,
       });
       setPreferences(updated);
+
       try {
         const scheduled = await localNotificationService.sync(updated);
         if (!scheduled.permissionGranted) {
@@ -124,127 +128,158 @@ export function NotificationPreferencesCard() {
     }
   }
 
+  const remindersDisabled = !preferences.allNotificationsEnabled;
+
   return (
     <View style={styles.container}>
-      <Text style={[styles.section, { color: colors.text }]}>Reminders</Text>
-      <Card>
-        <Text style={[styles.caption, { color: colors.muted }]}>
-          Choose the workout, hydration and recovery prompts you want GymBro to
-          send.
-        </Text>
+      <View style={styles.sectionHeading}>
+        <View
+          style={[styles.sectionIcon, { backgroundColor: colors.primarySoft }]}
+        >
+          <AppIcon color={colors.primary} name="clock" size={18} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={[styles.section, { color: colors.text }]}>
+            Reminders
+          </Text>
+          <Text style={[styles.sectionCaption, { color: colors.muted }]}>
+            Your routine, on your time
+          </Text>
+        </View>
+      </View>
+
+      <Card style={styles.card}>
+        <View
+          style={[
+            styles.masterSetting,
+            { backgroundColor: colors.primarySoft },
+          ]}
+        >
+          <View style={styles.flex}>
+            <Text style={[styles.masterTitle, { color: colors.text }]}>
+              All reminders
+            </Text>
+            <Text style={[styles.masterDescription, { color: colors.muted }]}>
+              Pause or resume every GymBro prompt at once.
+            </Text>
+          </View>
+          <ReminderSwitch
+            value={preferences.allNotificationsEnabled}
+            onChange={allNotificationsEnabled =>
+              setPreferences(current => ({
+                ...current,
+                allNotificationsEnabled,
+              }))
+            }
+          />
+        </View>
+
         <StatusNotice message={notice?.message} tone={notice?.tone} />
 
-        <ReminderToggle
-          label="All notifications"
-          value={preferences.allNotificationsEnabled}
-          onChange={value =>
-            setPreferences(current => ({
-              ...current,
-              allNotificationsEnabled: value,
-            }))
-          }
-        />
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-        <ReminderToggle
-          label="Workout reminder"
-          value={preferences.workoutEnabled}
-          onChange={value =>
-            setPreferences(current => ({
-              ...current,
-              workoutEnabled: value,
-            }))
-          }
-        />
-        {preferences.workoutEnabled ? (
-          <FormField
-            label="Workout reminder time (24h)"
-            placeholder="18:00"
-            value={preferences.workoutTime}
-            onChangeText={workoutTime =>
-              setPreferences(current => ({ ...current, workoutTime }))
+        <View style={styles.reminderList}>
+          <ReminderSetting
+            description="A prompt before today's scheduled training."
+            disabled={remindersDisabled}
+            icon="dumbbell"
+            label="Workout"
+            value={preferences.workoutEnabled}
+            onChange={workoutEnabled =>
+              setPreferences(current => ({ ...current, workoutEnabled }))
             }
-          />
-        ) : null}
+          >
+            {preferences.workoutEnabled && !remindersDisabled ? (
+              <FormField
+                label="Reminder time (24h)"
+                placeholder="18:00"
+                value={preferences.workoutTime}
+                onChangeText={workoutTime =>
+                  setPreferences(current => ({ ...current, workoutTime }))
+                }
+              />
+            ) : null}
+          </ReminderSetting>
 
-        <ReminderToggle
-          label="Hydration reminders"
-          value={preferences.hydrationEnabled}
-          onChange={value =>
-            setPreferences(current => ({
-              ...current,
-              hydrationEnabled: value,
-            }))
-          }
-        />
-        {preferences.hydrationEnabled ? (
-          <FormField
-            label="Hydration interval (minutes)"
-            keyboardType="number-pad"
-            value={String(preferences.hydrationIntervalMinutes)}
-            onChangeText={value =>
-              setPreferences(current => ({
-                ...current,
-                hydrationIntervalMinutes: Number(value) || 0,
-              }))
+          <ReminderSetting
+            description="Gentle water prompts throughout your day."
+            disabled={remindersDisabled}
+            icon="water"
+            label="Hydration"
+            value={preferences.hydrationEnabled}
+            onChange={hydrationEnabled =>
+              setPreferences(current => ({ ...current, hydrationEnabled }))
             }
-          />
-        ) : null}
+          >
+            {preferences.hydrationEnabled && !remindersDisabled ? (
+              <FormField
+                label="Repeat every (minutes)"
+                keyboardType="number-pad"
+                placeholder="120"
+                value={String(preferences.hydrationIntervalMinutes)}
+                onChangeText={value =>
+                  setPreferences(current => ({
+                    ...current,
+                    hydrationIntervalMinutes: Number(value) || 0,
+                  }))
+                }
+              />
+            ) : null}
+          </ReminderSetting>
 
-        <ReminderToggle
-          label="Bedtime reminder"
-          value={preferences.bedtimeEnabled}
-          onChange={value =>
-            setPreferences(current => ({
-              ...current,
-              bedtimeEnabled: value,
-            }))
-          }
-        />
-        {preferences.bedtimeEnabled ? (
-          <FormField
-            label="Bedtime reminder (24h)"
-            placeholder="22:00"
-            value={preferences.bedtimeReminderTime}
-            onChangeText={bedtimeReminderTime =>
-              setPreferences(current => ({
-                ...current,
-                bedtimeReminderTime,
-              }))
+          <ReminderSetting
+            description="A quiet nudge when it is time to wind down."
+            disabled={remindersDisabled}
+            icon="moon"
+            label="Bedtime"
+            value={preferences.bedtimeEnabled}
+            onChange={bedtimeEnabled =>
+              setPreferences(current => ({ ...current, bedtimeEnabled }))
             }
-          />
-        ) : null}
+          >
+            {preferences.bedtimeEnabled && !remindersDisabled ? (
+              <FormField
+                label="Reminder time (24h)"
+                placeholder="22:00"
+                value={preferences.bedtimeReminderTime}
+                onChangeText={bedtimeReminderTime =>
+                  setPreferences(current => ({
+                    ...current,
+                    bedtimeReminderTime,
+                  }))
+                }
+              />
+            ) : null}
+          </ReminderSetting>
 
-        <ReminderToggle
-          label="Morning sleep check-in"
-          value={preferences.sleepCheckinEnabled}
-          onChange={value =>
-            setPreferences(current => ({
-              ...current,
-              sleepCheckinEnabled: value,
-            }))
-          }
-        />
-        {preferences.sleepCheckinEnabled ? (
-          <FormField
-            label="Sleep check-in time (24h)"
-            placeholder="07:00"
-            value={preferences.sleepCheckinTime}
-            onChangeText={sleepCheckinTime =>
-              setPreferences(current => ({
-                ...current,
-                sleepCheckinTime,
-              }))
+          <ReminderSetting
+            description="Log last night's sleep and morning energy."
+            disabled={remindersDisabled}
+            icon="sun"
+            label="Morning check-in"
+            value={preferences.sleepCheckinEnabled}
+            onChange={sleepCheckinEnabled =>
+              setPreferences(current => ({ ...current, sleepCheckinEnabled }))
             }
-          />
-        ) : null}
+          >
+            {preferences.sleepCheckinEnabled && !remindersDisabled ? (
+              <FormField
+                label="Check-in time (24h)"
+                placeholder="07:00"
+                value={preferences.sleepCheckinTime}
+                onChangeText={sleepCheckinTime =>
+                  setPreferences(current => ({
+                    ...current,
+                    sleepCheckinTime,
+                  }))
+                }
+              />
+            ) : null}
+          </ReminderSetting>
+        </View>
 
         <PrimaryButton
           disabled={loading}
-          label={
-            loading ? 'Loading reminder settings' : 'Save reminder settings'
-          }
-          loading={saving}
+          label="Save reminder settings"
+          loading={loading || saving}
           onPress={() => save().catch(() => undefined)}
         />
       </Card>
@@ -252,58 +287,139 @@ export function NotificationPreferencesCard() {
   );
 }
 
-function ReminderToggle({
+function ReminderSetting({
+  children,
+  description,
+  disabled,
+  icon,
   label,
   value,
   onChange,
-}: {
+}: PropsWithChildren<{
+  description: string;
+  disabled: boolean;
+  icon: AppIconName;
   label: string;
   value: boolean;
   onChange: (value: boolean) => void;
-}) {
+}>) {
   const { colors } = useTheme();
+
   return (
-    <View style={styles.reminderRow}>
-      <Text style={[styles.reminderLabel, { color: colors.text }]}>
-        {label}
-      </Text>
-      <View style={styles.reminderChoices}>
-        <ChoiceChip
-          label="On"
-          selected={value}
-          onPress={() => onChange(true)}
-        />
-        <ChoiceChip
-          label="Off"
-          selected={!value}
-          onPress={() => onChange(false)}
-        />
+    <View
+      style={[
+        styles.reminderBlock,
+        {
+          backgroundColor: colors.surfaceRaised,
+          borderColor: colors.border,
+        },
+        disabled ? styles.disabled : null,
+      ]}
+    >
+      <View style={styles.reminderRow}>
+        <View
+          style={[styles.reminderIcon, { backgroundColor: colors.primarySoft }]}
+        >
+          <AppIcon color={colors.primary} name={icon} size={17} />
+        </View>
+        <View style={styles.reminderCopy}>
+          <Text style={[styles.reminderLabel, { color: colors.text }]}>
+            {label}
+          </Text>
+          <Text style={[styles.reminderDescription, { color: colors.muted }]}>
+            {description}
+          </Text>
+        </View>
+        <ReminderSwitch disabled={disabled} value={value} onChange={onChange} />
       </View>
+      {children ? <View style={styles.settingControl}>{children}</View> : null}
     </View>
   );
 }
 
+function ReminderSwitch({
+  disabled = false,
+  value,
+  onChange,
+}: {
+  disabled?: boolean;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <Switch
+      accessibilityRole="switch"
+      disabled={disabled}
+      ios_backgroundColor={colors.border}
+      thumbColor={colors.surface}
+      trackColor={{ false: colors.border, true: colors.primary }}
+      value={value}
+      onValueChange={onChange}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { gap: 12 },
-  section: { fontFamily: fonts.displaySemibold, fontSize: 24, marginTop: 5 },
-  caption: {
-    fontFamily: fonts.body,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  divider: { height: 1, marginBottom: 14 },
-  reminderRow: {
+  container: { gap: 14 },
+  sectionHeading: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 14,
+    gap: 12,
+    marginTop: 4,
   },
-  reminderLabel: {
-    flex: 1,
+  sectionIcon: {
+    alignItems: 'center',
+    borderRadius: 15,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  section: { fontFamily: fonts.displaySemibold, fontSize: 24 },
+  sectionCaption: { fontFamily: fonts.body, fontSize: 12, marginTop: 1 },
+  card: { gap: 18 },
+  masterSetting: {
+    alignItems: 'center',
+    borderRadius: 20,
+    flexDirection: 'row',
+    gap: 14,
+    padding: 16,
+  },
+  masterTitle: { fontFamily: fonts.displaySemibold, fontSize: 19 },
+  masterDescription: {
     fontFamily: fonts.body,
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
   },
-  reminderChoices: { flexDirection: 'row', gap: 8 },
+  reminderList: { gap: 12 },
+  reminderBlock: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 15,
+  },
+  reminderRow: { alignItems: 'center', flexDirection: 'row', gap: 11 },
+  reminderIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  reminderCopy: { flex: 1 },
+  reminderLabel: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  reminderDescription: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  settingControl: { marginTop: 15 },
+  disabled: { opacity: 0.52 },
+  flex: { flex: 1 },
 });

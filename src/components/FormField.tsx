@@ -94,17 +94,17 @@ const styles = StyleSheet.create({
   label: { fontFamily: fonts.body, fontSize: 14, fontWeight: '700' },
   inputShell: {
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
-    minHeight: 50,
+    minHeight: 54,
   },
   input: {
     flex: 1,
     fontFamily: fonts.body,
     fontSize: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   passwordInput: { paddingRight: 6 },
   visibilityButton: {

@@ -87,10 +87,7 @@ export function DashboardScreen() {
         setToday(await workoutApi.today());
       } catch (caught) {
         syncErrors.push(
-          apiErrorMessage(
-            caught,
-            "Today's workout could not be refreshed.",
-          ),
+          apiErrorMessage(caught, "Today's workout could not be refreshed."),
         );
       }
     } else {

@@ -26,6 +26,11 @@ export function Screen({ children, scroll = false }: ScreenProps) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  content: { flex: 1, gap: 16, padding: 24 },
-  scrollContent: { flexGrow: 1, gap: 16, padding: 24 },
+  content: { flex: 1, gap: 20, padding: 22 },
+  scrollContent: {
+    flexGrow: 1,
+    gap: 20,
+    padding: 22,
+    paddingBottom: 34,
+  },
 });

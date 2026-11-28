@@ -425,7 +425,7 @@ export function GuidedWorkoutRunner({
   return (
     <Screen scroll>
       <View style={styles.topRow}>
-        <View>
+        <View style={styles.flex}>
           <Text style={[styles.eyebrow, { color: colors.primary }]}>
             LIVE WORKOUT
           </Text>
@@ -460,15 +460,25 @@ export function GuidedWorkoutRunner({
             accessibilityRole="button"
             onPress={() => setPaused(value => !value)}
             style={[
-              styles.controlButton,
-              { backgroundColor: colors.primarySoft },
+              styles.pauseControl,
+              {
+                backgroundColor: paused ? colors.primary : colors.primarySoft,
+              },
             ]}
           >
             <AppIcon
               name={paused ? 'play' : 'pause'}
-              color={colors.primary}
+              color={paused ? colors.textOnPrimary : colors.primary}
               size={16}
             />
+            <Text
+              style={[
+                styles.pauseControlText,
+                { color: paused ? colors.textOnPrimary : colors.primary },
+              ]}
+            >
+              {paused ? 'Resume' : 'Pause'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -496,6 +506,32 @@ export function GuidedWorkoutRunner({
           ]}
         />
       </View>
+
+      {paused ? (
+        <View
+          style={[
+            styles.pausedBanner,
+            {
+              backgroundColor: colors.primarySoft,
+              borderColor: `${colors.primary}35`,
+            },
+          ]}
+        >
+          <View
+            style={[styles.pausedIcon, { backgroundColor: colors.primary }]}
+          >
+            <AppIcon name="pause" color={colors.textOnPrimary} size={14} />
+          </View>
+          <View style={styles.flex}>
+            <Text style={[styles.pausedTitle, { color: colors.text }]}>
+              Workout paused
+            </Text>
+            <Text style={[styles.pausedCaption, { color: colors.muted }]}>
+              Timers and set actions are frozen until you resume.
+            </Text>
+          </View>
+        </View>
+      ) : null}
 
       <Card style={styles.stageCard}>
         <Text style={[styles.phaseTitle, { color: colors.text }]}>
@@ -583,7 +619,7 @@ export function GuidedWorkoutRunner({
             </Text>
             <PrimaryButton
               label={isVisionExercise ? 'Open camera coach' : 'Set complete'}
-              disabled={savingExit}
+              disabled={paused || savingExit}
               onPress={isVisionExercise ? openVisionCoach : finishCurrentSet}
             />
           </>
@@ -633,24 +669,33 @@ export function GuidedWorkoutRunner({
 
         {phase !== 'WARM_UP' && phase !== 'COOLDOWN' ? (
           <View style={styles.skipExercise}>
-            <PrimaryButton
-              label="Skip this exercise"
-              disabled={loading || savingExit}
-              variant="secondary"
+            <Pressable
+              accessibilityRole="button"
+              disabled={paused || loading || savingExit}
               onPress={confirmSkipExercise}
-            />
-            <Text style={[styles.skipHint, { color: colors.muted }]}>
-              The rest of your workout will continue.
-            </Text>
+              style={({ pressed }) => [
+                styles.skipAction,
+                {
+                  backgroundColor: colors.surfaceRaised,
+                  borderColor: colors.border,
+                },
+                pressed ? styles.actionPressed : null,
+                paused || loading || savingExit ? styles.actionDisabled : null,
+              ]}
+            >
+              <AppIcon name="chevron" color={colors.muted} size={12} />
+              <View style={styles.flex}>
+                <Text style={[styles.skipActionTitle, { color: colors.text }]}>
+                  Skip this exercise
+                </Text>
+                <Text style={[styles.skipHint, { color: colors.muted }]}>
+                  Continue with the next movement
+                </Text>
+              </View>
+            </Pressable>
           </View>
         ) : null}
       </Card>
-
-      {paused ? (
-        <Text style={[styles.paused, { color: colors.warning }]}>
-          Workout paused.
-        </Text>
-      ) : null}
 
       {!voiceAvailable ? (
         <Text style={[styles.voiceNotice, { color: colors.warning }]}>
@@ -659,12 +704,34 @@ export function GuidedWorkoutRunner({
         </Text>
       ) : null}
 
-      <PrimaryButton
-        label="End and skip workout"
+      <Pressable
+        accessibilityRole="button"
         disabled={loading || savingExit}
-        variant="danger"
         onPress={onSkip}
-      />
+        style={({ pressed }) => [
+          styles.endAction,
+          {
+            backgroundColor: `${colors.danger}0D`,
+            borderColor: `${colors.danger}35`,
+          },
+          pressed ? styles.actionPressed : null,
+          loading || savingExit ? styles.actionDisabled : null,
+        ]}
+      >
+        <View
+          style={[styles.endIcon, { backgroundColor: `${colors.danger}18` }]}
+        >
+          <AppIcon name="close" color={colors.danger} size={14} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={[styles.endTitle, { color: colors.danger }]}>
+            End workout early
+          </Text>
+          <Text style={[styles.endCaption, { color: colors.muted }]}>
+            Your completed exercise progress will still be recorded.
+          </Text>
+        </View>
+      </Pressable>
     </Screen>
   );
 }
@@ -682,6 +749,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   sessionTitle: { fontFamily: fonts.displaySemibold, fontSize: 28 },
+  flex: { flex: 1 },
   controls: { flexDirection: 'row', gap: 10 },
   controlButton: {
     alignItems: 'center',
@@ -689,6 +757,20 @@ const styles = StyleSheet.create({
     height: 46,
     justifyContent: 'center',
     width: 46,
+  },
+  pauseControl: {
+    alignItems: 'center',
+    borderRadius: 23,
+    flexDirection: 'row',
+    gap: 7,
+    height: 46,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+  },
+  pauseControlText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '900',
   },
   timerRow: {
     alignItems: 'flex-end',
@@ -705,6 +787,31 @@ const styles = StyleSheet.create({
   exerciseCount: { fontFamily: fonts.body, fontSize: 13, fontWeight: '700' },
   progressTrack: { borderRadius: 8, height: 7, overflow: 'hidden' },
   progressFill: { borderRadius: 8, height: '100%' },
+  pausedBanner: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    padding: 14,
+  },
+  pausedIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  pausedTitle: {
+    fontFamily: fonts.displaySemibold,
+    fontSize: 18,
+  },
+  pausedCaption: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 1,
+  },
   stageCard: { alignItems: 'center', gap: 15, paddingVertical: 26 },
   phaseTitle: {
     alignSelf: 'stretch',
@@ -749,12 +856,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.3,
   },
   repTarget: { fontFamily: fonts.display, fontSize: 48 },
-  paused: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
   voiceNotice: {
     fontFamily: fonts.body,
     fontSize: 13,
@@ -762,6 +863,48 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     textAlign: 'center',
   },
-  skipExercise: { alignSelf: 'stretch', gap: 7, marginTop: 6 },
-  skipHint: { fontFamily: fonts.body, fontSize: 11, textAlign: 'center' },
+  skipExercise: { alignSelf: 'stretch', marginTop: 6 },
+  skipAction: {
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+  },
+  skipActionTitle: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  skipHint: { fontFamily: fonts.body, fontSize: 11, marginTop: 2 },
+  endAction: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    padding: 15,
+  },
+  endIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  endTitle: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  endCaption: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  actionPressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
+  actionDisabled: { opacity: 0.48 },
 });

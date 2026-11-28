@@ -60,12 +60,12 @@ export function StatusNotice({
 const styles = StyleSheet.create({
   notice: {
     alignItems: 'flex-start',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
   },
   message: {
     flex: 1,

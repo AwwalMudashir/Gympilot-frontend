@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
@@ -29,6 +29,7 @@ export function CoachScreen() {
   const [feedbackSaving, setFeedbackSaving] = useState(false);
   const [feedbackNotice, setFeedbackNotice] = useState<string>();
   const [error, setError] = useState<string>();
+  const [showDetails, setShowDetails] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,23 +101,30 @@ export function CoachScreen() {
 
   return (
     <Screen scroll>
-      <Text style={[styles.eyebrow, { color: colors.primary }]}>AI COACH</Text>
-      <Text style={[styles.title, { color: colors.text }]}>Your next move</Text>
+      <Text style={[styles.eyebrow, { color: colors.primary }]}>
+        GYMBRO COACH
+      </Text>
+      <Text style={[styles.title, { color: colors.text }]}>Your game plan</Text>
       <Text style={[styles.subtitle, { color: colors.muted }]}>
-        Conservative guidance grounded in the training and recovery facts you
-        have recorded in GymBro.
+        One clear recommendation built from your latest training and check-ins.
       </Text>
 
       <View style={styles.tabs}>
         <ChoiceChip
           label="Today"
           selected={selectedType === 'DAILY'}
-          onPress={() => setSelectedType('DAILY')}
+          onPress={() => {
+            setSelectedType('DAILY');
+            setShowDetails(false);
+          }}
         />
         <ChoiceChip
           label="Weekly review"
           selected={selectedType === 'WEEKLY'}
-          onPress={() => setSelectedType('WEEKLY')}
+          onPress={() => {
+            setSelectedType('WEEKLY');
+            setShowDetails(false);
+          }}
         />
       </View>
 
@@ -147,6 +155,7 @@ export function CoachScreen() {
               >
                 <AppIcon name="bolt" color={colors.primary} size={20} />
               </View>
+
               <View style={styles.flex}>
                 <Text
                   style={[styles.heroType, { color: colors.textOnPrimary }]}
@@ -156,11 +165,12 @@ export function CoachScreen() {
                 <Text
                   style={[styles.generated, { color: colors.textOnPrimary }]}
                 >
-                  {generationLabel(brief)} ·{' '}
+                  {generationLabel(brief)} {'\u00B7'}{' '}
                   {formatGeneratedAt(brief.generatedAt)}
                 </Text>
               </View>
             </View>
+
             <Text style={[styles.summary, { color: colors.textOnPrimary }]}>
               {brief.summary}
             </Text>
@@ -176,32 +186,32 @@ export function CoachScreen() {
               >
                 <AppIcon name="core" color={colors.primary} size={18} />
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Focus now
-              </Text>
+              <View style={styles.flex}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Focus now
+                </Text>
+                <Text style={[styles.sectionCaption, { color: colors.muted }]}>
+                  Keep it simple and actionable
+                </Text>
+              </View>
             </View>
+
             <Text style={[styles.focus, { color: colors.text }]}>
               {brief.focusToday}
             </Text>
           </Card>
 
           {brief.cautions.length ? (
-            <Card>
-              <View style={styles.sectionHeading}>
-                <View
-                  style={[
-                    styles.sectionIcon,
-                    { backgroundColor: `${colors.warning}18` },
-                  ]}
-                >
-                  <AppIcon name="info" color={colors.warning} size={18} />
-                </View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Keep in mind
+            <Card style={{ backgroundColor: `${colors.warning}0D` }}>
+              <View style={styles.compactHeading}>
+                <AppIcon name="info" color={colors.warning} size={16} />
+                <Text style={[styles.compactTitle, { color: colors.text }]}>
+                  Watch-outs
                 </Text>
               </View>
-              <View style={styles.list}>
-                {brief.cautions.map(caution => (
+
+              <View style={styles.compactList}>
+                {brief.cautions.slice(0, 3).map(caution => (
                   <ListItem
                     color={colors.warning}
                     icon="info"
@@ -213,95 +223,119 @@ export function CoachScreen() {
             </Card>
           ) : null}
 
-          <Card>
-            <View style={styles.sectionHeading}>
-              <View
-                style={[
-                  styles.sectionIcon,
-                  { backgroundColor: colors.primarySoft },
-                ]}
-              >
-                <AppIcon name="chart" color={colors.primary} size={17} />
-              </View>
-              <View style={styles.flex}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Why this recommendation
-                </Text>
-                <Text style={[styles.sectionCaption, { color: colors.muted }]}>
-                  Facts read from your GymBro records
-                </Text>
-              </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowDetails(value => !value)}
+            style={[
+              styles.detailsToggle,
+              {
+                backgroundColor: colors.surfaceRaised,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.detailsIcon,
+                { backgroundColor: colors.primarySoft },
+              ]}
+            >
+              <AppIcon name="chart" color={colors.primary} size={16} />
             </View>
-            <View style={styles.list}>
-              {brief.evidence.map(item => (
-                <ListItem
-                  color={colors.primary}
-                  icon="check"
-                  key={item}
-                  text={item}
-                />
-              ))}
+            <View style={styles.flex}>
+              <Text style={[styles.detailsTitle, { color: colors.text }]}>
+                Why this advice?
+              </Text>
+              <Text style={[styles.detailsCaption, { color: colors.muted }]}>
+                See the GymBro data used for this brief
+              </Text>
             </View>
-          </Card>
+            <AppIcon name="chevron" color={colors.muted} size={13} />
+          </Pressable>
 
-          {brief.missingData.length ? (
-            <Card style={{ backgroundColor: colors.primarySoft }}>
-              <Text style={[styles.missingTitle, { color: colors.text }]}>
-                Improve your next brief
+          {showDetails ? (
+            <Card>
+              <Text style={[styles.detailSectionTitle, { color: colors.text }]}>
+                Signals used
               </Text>
-              <Text style={[styles.missingIntro, { color: colors.muted }]}>
-                GymBro did not guess these values:
-              </Text>
-              <View style={styles.list}>
-                {brief.missingData.map(item => (
+              <View style={styles.compactList}>
+                {brief.evidence.map(item => (
                   <ListItem
-                    color={colors.muted}
-                    icon="info"
+                    color={colors.primary}
+                    icon="check"
                     key={item}
                     text={item}
                   />
                 ))}
               </View>
+
+              {brief.missingData.length ? (
+                <View
+                  style={[
+                    styles.missingSection,
+                    { borderTopColor: colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[styles.detailSectionTitle, { color: colors.text }]}
+                  >
+                    Add for a sharper brief
+                  </Text>
+                  <Text style={[styles.missingIntro, { color: colors.muted }]}>
+                    GymBro did not guess these values:
+                  </Text>
+                  <View style={styles.compactList}>
+                    {brief.missingData.map(item => (
+                      <ListItem
+                        color={colors.muted}
+                        icon="info"
+                        key={item}
+                        text={item}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </Card>
           ) : null}
 
-          <StatusNotice
-            message="GymBro coaching is fitness guidance, not medical diagnosis or treatment advice."
-            tone="info"
-          />
           <Card>
-            <Text style={[styles.feedbackTitle, { color: colors.text }]}>
-              Was this recommendation useful?
-            </Text>
-            <Text style={[styles.feedbackCaption, { color: colors.muted }]}>
-              Your response is stored with this brief to improve future coach
-              work.
-            </Text>
-            <View style={styles.feedbackChoices}>
-              <ChoiceChip
-                disabled={feedbackSaving}
-                label="Helpful"
-                selected={brief.feedback === 'HELPFUL'}
-                onPress={() =>
-                  recordFeedback('HELPFUL').catch(() => undefined)
-                }
-              />
-              <ChoiceChip
-                disabled={feedbackSaving}
-                label="Not useful"
-                selected={brief.feedback === 'NOT_USEFUL'}
-                onPress={() =>
-                  recordFeedback('NOT_USEFUL').catch(() => undefined)
-                }
-              />
+            <View style={styles.feedbackHeading}>
+              <View style={styles.flex}>
+                <Text style={[styles.feedbackTitle, { color: colors.text }]}>
+                  Useful?
+                </Text>
+                <Text style={[styles.feedbackCaption, { color: colors.muted }]}>
+                  Your response helps tune future briefs.
+                </Text>
+              </View>
+              <View style={styles.feedbackChoices}>
+                <ChoiceChip
+                  disabled={feedbackSaving}
+                  label="Yes"
+                  selected={brief.feedback === 'HELPFUL'}
+                  onPress={() =>
+                    recordFeedback('HELPFUL').catch(() => undefined)
+                  }
+                />
+                <ChoiceChip
+                  disabled={feedbackSaving}
+                  label="No"
+                  selected={brief.feedback === 'NOT_USEFUL'}
+                  onPress={() =>
+                    recordFeedback('NOT_USEFUL').catch(() => undefined)
+                  }
+                />
+              </View>
             </View>
             <StatusNotice message={feedbackNotice} tone="success" />
           </Card>
+
           <PrimaryButton
-            label={`Refresh ${
-              selectedType === 'DAILY' ? 'today’s brief' : 'weekly review'
-            }`}
+            label="Update recommendation"
             loading={regenerating}
+            loadingLabel="Reviewing your latest data…"
+            variant="secondary"
             onPress={() => regenerate().catch(() => undefined)}
           />
         </>
@@ -329,9 +363,7 @@ function ListItem({
 }
 
 function generationLabel(brief: CoachBrief) {
-  return brief.generationSource === 'OLLAMA'
-    ? 'AI-assisted'
-    : 'Safety fallback';
+  return brief.generationSource === 'OLLAMA' ? 'Ollama AI' : 'GymBro insight';
 }
 
 function formatGeneratedAt(value: string) {
@@ -395,12 +427,42 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginTop: 16,
   },
-  list: { gap: 11, marginTop: 16 },
+  compactHeading: { alignItems: 'center', flexDirection: 'row', gap: 9 },
+  compactTitle: { fontFamily: fonts.displaySemibold, fontSize: 19 },
+  compactList: { gap: 10, marginTop: 14 },
   listItem: { alignItems: 'flex-start', flexDirection: 'row', gap: 10 },
   listText: { flex: 1, fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
-  missingTitle: { fontFamily: fonts.displaySemibold, fontSize: 21 },
+  detailsToggle: {
+    alignItems: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    padding: 16,
+  },
+  detailsIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  detailsTitle: { fontFamily: fonts.displaySemibold, fontSize: 18 },
+  detailsCaption: { fontFamily: fonts.body, fontSize: 11, marginTop: 2 },
+  detailSectionTitle: { fontFamily: fonts.displaySemibold, fontSize: 20 },
+  missingSection: {
+    borderTopWidth: 1,
+    marginTop: 20,
+    paddingTop: 20,
+  },
   missingIntro: { fontFamily: fonts.body, fontSize: 12, marginTop: 4 },
-  feedbackTitle: { fontFamily: fonts.displaySemibold, fontSize: 21 },
+  feedbackHeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  feedbackTitle: { fontFamily: fonts.displaySemibold, fontSize: 19 },
   feedbackCaption: {
     fontFamily: fonts.body,
     fontSize: 13,
@@ -411,6 +473,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 9,
-    marginTop: 16,
   },
 });

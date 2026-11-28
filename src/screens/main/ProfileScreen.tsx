@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
 import { ChoiceChip } from '../../components/ChoiceChip';
@@ -9,6 +9,7 @@ import { NotificationPreferencesCard } from '../../components/NotificationPrefer
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
+import { StatusNotice } from '../../components/StatusNotice';
 import { DetailedWorkoutAnalytics } from '../../components/WorkoutAnalyticsView';
 import { equipmentGroups } from '../../config/trainingOptions';
 import { apiErrorMessage } from '../../services/http';
@@ -74,6 +75,11 @@ export function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveStage, setSaveStage] = useState<'PROFILE' | 'PLAN'>('PROFILE');
+  const [saveNotice, setSaveNotice] = useState<{
+    message: string;
+    tone: 'error' | 'success';
+  }>();
   const [error, setError] = useState<string>();
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
@@ -160,41 +166,6 @@ export function ProfileScreen() {
     );
   }
 
-  async function regeneratePlanForProfile(targetProfile: Profile) {
-    setSaving(true);
-    setError(undefined);
-    try {
-      await workoutApi.regeneratePlan();
-      Alert.alert(
-        'Plan regenerated',
-        `Your week now uses ${targetProfile.daysPerWeek} training days with sessions targeting a maximum of ${targetProfile.workoutDurationMinutes} minutes.`,
-      );
-    } catch (caught) {
-      const message = apiErrorMessage(
-        caught,
-        'Your profile was saved, but the plan could not be regenerated.',
-      );
-      setError(message);
-      Alert.alert('Could not regenerate plan', message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function promptForPlanRegeneration(updatedProfile: Profile) {
-    Alert.alert(
-      'Regenerate your workout plan?',
-      'Your schedule or training preferences changed. Regenerate this week so the selected days, exercises, sets and rest periods match your updated profile.',
-      [
-        { text: 'Keep current plan', style: 'cancel' },
-        {
-          text: 'Regenerate plan',
-          onPress: () => regeneratePlanForProfile(updatedProfile),
-        },
-      ],
-    );
-  }
-
   async function save() {
     if (!profile) return;
     const ageValue = Number(age);
@@ -204,7 +175,11 @@ export function ProfileScreen() {
     const waterTargetValue = Number(waterTarget);
     const sleepTargetValue = Number(sleepTarget);
     const validTime = /^([01]\d|2[0-3]):[0-5]\d$/;
-    if (
+    let validationMessage: string | undefined;
+
+    if (trainingDays.length === 0) {
+      validationMessage = 'Choose at least one training day.';
+    } else if (
       ageValue < 13 ||
       ageValue > 120 ||
       heightValue < 80 ||
@@ -219,16 +194,23 @@ export function ProfileScreen() {
       sleepTargetValue > 900 ||
       !validTime.test(preferredBedtime) ||
       !validTime.test(preferredWakeTime) ||
-      !location.trim() ||
-      trainingDays.length === 0
+      !location.trim()
     ) {
-      setError(
-        'Check your measurements, schedule, recovery targets and 24-hour sleep times.',
-      );
+      validationMessage =
+        'Check your measurements, session duration, recovery targets and 24-hour sleep times.';
+    }
+
+    if (validationMessage) {
+      setError(validationMessage);
+      setSaveNotice({ message: validationMessage, tone: 'error' });
       return;
     }
+
     setSaving(true);
+    setSaveStage('PROFILE');
     setError(undefined);
+    setSaveNotice(undefined);
+
     try {
       const payload: ProfilePayload = {
         age: ageValue,
@@ -251,15 +233,48 @@ export function ProfileScreen() {
       };
       const previousProfile = profile;
       const updated = await profileApi.update(payload);
+      const shouldRebuildPlan = planPreferencesChanged(
+        previousProfile,
+        updated,
+      );
+
       setProfile(updated);
-      setEditing(false);
-      if (planPreferencesChanged(previousProfile, updated)) {
-        promptForPlanRegeneration(updated);
+
+      if (shouldRebuildPlan) {
+        setSaveStage('PLAN');
+
+        try {
+          await workoutApi.regeneratePlan();
+        } catch (caught) {
+          const message = apiErrorMessage(
+            caught,
+            'Your profile was saved, but GymBro could not rebuild this week’s plan yet.',
+          );
+
+          setEditing(false);
+          setError(message);
+          setSaveNotice({ message, tone: 'error' });
+          return;
+        }
       }
+
+      setEditing(false);
+      setSaveNotice({
+        message: shouldRebuildPlan
+          ? `Profile saved and this week rebuilt for ${updated.daysPerWeek} training days.`
+          : 'Your profile changes have been saved.',
+        tone: 'success',
+      });
     } catch (caught) {
-      setError(apiErrorMessage(caught));
+      const message = apiErrorMessage(
+        caught,
+        'Your profile could not be saved.',
+      );
+      setError(message);
+      setSaveNotice({ message, tone: 'error' });
     } finally {
       setSaving(false);
+      setSaveStage('PROFILE');
     }
   }
 
@@ -396,6 +411,11 @@ export function ProfileScreen() {
                 />
               ))}
             </View>
+            <Text style={[styles.selectionHint, { color: colors.muted }]}>
+              {trainingDays.length} training{' '}
+              {trainingDays.length === 1 ? 'day' : 'days'} selected. Updating
+              this schedule automatically rebuilds the current plan.
+            </Text>
             <Text style={[styles.editLabel, { color: colors.text }]}>
               Experience
             </Text>
@@ -498,9 +518,18 @@ export function ProfileScreen() {
               value={sleepTarget}
               onChangeText={setSleepTarget}
             />
+            <StatusNotice
+              message={saveNotice?.message}
+              tone={saveNotice?.tone}
+            />
             <PrimaryButton
               label="Save changes"
               loading={saving}
+              loadingLabel={
+                saveStage === 'PLAN'
+                  ? 'Rebuilding your plan…'
+                  : 'Saving changes…'
+              }
               onPress={save}
             />
           </View>
@@ -707,6 +736,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: -10,
+  },
+  selectionHint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: -12,
   },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   metric: { width: '45%' },

@@ -25,12 +25,12 @@ export function Card({
 }
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 22,
+    borderRadius: 26,
     borderWidth: 1,
-    padding: 18,
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    padding: 20,
+    shadowOpacity: 0.065,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
   },
 });

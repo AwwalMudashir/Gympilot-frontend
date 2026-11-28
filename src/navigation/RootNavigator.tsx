@@ -77,10 +77,7 @@ function StartupRecovery() {
   return (
     <View style={[styles.recovery, { backgroundColor: colors.background }]}>
       <View
-        style={[
-          styles.recoveryIcon,
-          { backgroundColor: colors.primarySoft },
-        ]}
+        style={[styles.recoveryIcon, { backgroundColor: colors.primarySoft }]}
       >
         <AppIcon color={colors.primary} name="retry" size={28} />
       </View>

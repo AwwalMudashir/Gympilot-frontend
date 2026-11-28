@@ -26,13 +26,28 @@ export function CoachDashboardCard({
               GYMBRO COACH
             </Text>
             <Text style={[styles.title, { color: colors.text }]}>
-              Today’s check-in
+              Latest coach brief
             </Text>
           </View>
+          {brief ? (
+            <View
+              style={[
+                styles.sourcePill,
+                { backgroundColor: colors.primarySoft },
+              ]}
+            >
+              <Text style={[styles.sourceText, { color: colors.primary }]}>
+                {brief.generationSource === 'OLLAMA' ? 'AI' : 'INSIGHT'}
+              </Text>
+            </View>
+          ) : null}
           <AppIcon name="chevron" color={colors.muted} size={14} />
         </View>
 
-        <Text style={[styles.summary, { color: colors.text }]}>
+        <Text
+          numberOfLines={2}
+          style={[styles.summary, { color: colors.text }]}
+        >
           {brief?.summary ??
             'Open your coaching brief for guidance based on your recent training and recovery data.'}
         </Text>
@@ -41,7 +56,10 @@ export function CoachDashboardCard({
             <Text style={[styles.focusLabel, { color: colors.primary }]}>
               TODAY’S FOCUS
             </Text>
-            <Text style={[styles.focusText, { color: colors.text }]}>
+            <Text
+              numberOfLines={2}
+              style={[styles.focusText, { color: colors.text }]}
+            >
               {brief.focusToday}
             </Text>
           </View>
@@ -68,6 +86,17 @@ const styles = StyleSheet.create({
     letterSpacing: 1.3,
   },
   title: { fontFamily: fonts.displaySemibold, fontSize: 22, marginTop: 1 },
+  sourcePill: {
+    borderRadius: 99,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  sourceText: {
+    fontFamily: fonts.body,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
   summary: {
     fontFamily: fonts.body,
     fontSize: 14,

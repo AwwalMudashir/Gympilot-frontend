@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '../../components/AppIcon';
 import { Card } from '../../components/Card';
@@ -351,18 +351,67 @@ export function WorkoutDetailScreen({ route }: Props) {
               )
             }
           />
-          <PrimaryButton
-            label="Reschedule"
-            disabled={actionLoading}
-            variant="secondary"
-            onPress={reschedule}
-          />
-          <PrimaryButton
-            label="Skip workout"
-            disabled={!scheduledToday || actionLoading}
-            variant="danger"
-            onPress={skipInProgressWorkout}
-          />
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={actionLoading}
+              onPress={reschedule}
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                {
+                  backgroundColor: colors.surfaceRaised,
+                  borderColor: colors.border,
+                },
+                pressed ? styles.actionPressed : null,
+                actionLoading ? styles.actionDisabled : null,
+              ]}
+            >
+              <View
+                style={[
+                  styles.actionIcon,
+                  { backgroundColor: colors.primarySoft },
+                ]}
+              >
+                <AppIcon name="clock" color={colors.primary} size={15} />
+              </View>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>
+                Reschedule
+              </Text>
+              <Text style={[styles.actionCaption, { color: colors.muted }]}>
+                Move this session
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={!scheduledToday || actionLoading}
+              onPress={skipInProgressWorkout}
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                {
+                  backgroundColor: `${colors.danger}0D`,
+                  borderColor: `${colors.danger}35`,
+                },
+                pressed ? styles.actionPressed : null,
+                !scheduledToday || actionLoading ? styles.actionDisabled : null,
+              ]}
+            >
+              <View
+                style={[
+                  styles.actionIcon,
+                  { backgroundColor: `${colors.danger}18` },
+                ]}
+              >
+                <AppIcon name="close" color={colors.danger} size={15} />
+              </View>
+              <Text style={[styles.actionTitle, { color: colors.danger }]}>
+                Skip workout
+              </Text>
+              <Text style={[styles.actionCaption, { color: colors.muted }]}>
+                Available today only
+              </Text>
+            </Pressable>
+          </View>
         </>
       )}
     </Screen>
@@ -401,6 +450,38 @@ const styles = StyleSheet.create({
   restText: { fontFamily: fonts.body, fontSize: 12 },
   exerciseMetaItem: { alignItems: 'center', flexDirection: 'row', gap: 6 },
   calorieText: { fontFamily: fonts.body, fontSize: 12, fontWeight: '800' },
+  actionRow: { flexDirection: 'row', gap: 12 },
+  secondaryAction: {
+    alignItems: 'center',
+    borderRadius: 22,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 128,
+    padding: 15,
+  },
+  actionIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 40,
+    justifyContent: 'center',
+    marginBottom: 10,
+    width: 40,
+  },
+  actionTitle: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  actionCaption: {
+    fontFamily: fonts.body,
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: 3,
+    textAlign: 'center',
+  },
+  actionPressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
+  actionDisabled: { opacity: 0.45 },
   error: { fontFamily: fonts.body, fontSize: 13, fontWeight: '700' },
   finalTitle: { fontFamily: fonts.displaySemibold, fontSize: 23 },
 });

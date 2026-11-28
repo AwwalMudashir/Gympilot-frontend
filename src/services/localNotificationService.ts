@@ -100,7 +100,8 @@ export const localNotificationService = {
     const permissionGranted =
       settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
       settings.authorizationStatus === AuthorizationStatus.PROVISIONAL;
-    if (!permissionGranted) return { permissionGranted: false, scheduledCount: 0 };
+    if (!permissionGranted)
+      return { permissionGranted: false, scheduledCount: 0 };
 
     await notifee.createChannel({
       id: CHANNEL_ID,
@@ -138,7 +139,7 @@ export const localNotificationService = {
         scheduleDaily(
           REMINDER_IDS.sleepCheckin,
           'Morning check-in',
-          'Log last night\'s sleep and how energised you feel this morning.',
+          "Log last night's sleep and how energised you feel this morning.",
           preferences.sleepCheckinTime,
         ),
       );
